@@ -39,7 +39,7 @@ s.options.postln;
 s.waitForBoot {
     // ==== SETUP ====
     // Cargar el buffer
-    ~buf = Buffer.read(s, "/Users/JoakuDeSotavento1/Documents/Dragon Fly Interactions/Santi/SC/flamencoMairena.wav");
+    ~buf = Buffer.read(s, "/Users/JoakuDeSotavento1/Documents/img-mov/git/ElEspirituDelSuelo/TallerMassana/flamencoMairena.wav");
 
     // Definir Synth
 SynthDef(\midiSamplePlayer, {

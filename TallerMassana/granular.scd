@@ -25,7 +25,7 @@ s.quit;
 s.makeWindow;
 s.scope;
 
-~marSamp = Buffer.read(s,"/Users/JoakuDeSotavento1/Documents/Dragon Fly Interactions/Santi/SC/mar-ballena.WAV");
+~marSamp = Buffer.read(s,"/Users/JoakuDeSotavento1/Documents/img-mov/git/ElEspirituDelSuelo/TallerMassana/mar-ballena.WAV");
 
 ~tricSAmpler = Buffer.read(s, "/Users/JoakuDeSotavento1/Documents/Dragon Fly Interactions/Santi/SC/tricac.WAV");
 
