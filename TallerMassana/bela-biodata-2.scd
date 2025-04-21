@@ -94,7 +94,7 @@ SynthDef(\midiSamplePlayer, {
         resetPos: resetPos
     );
 
-    sig = BufRd.ar(1, bufnum, pointer, interpolation: 2);
+    sig = BufRd.ar(2, bufnum, pointer, interpolation: 2);
     sig = sig * amp * env;
     Out.ar(out, sig ! 2);
 }).add;
