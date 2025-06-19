@@ -1,3 +1,4 @@
+
 s = Server.default;
 
 // Configuración de Bela
@@ -10,6 +11,7 @@ s.options.numOutputBusChannels = 2;
 
 s.options.postln;
 
+
 // Esperar a que el servidor arranque
 s.waitForBoot {
     // ==== SETUP ====
@@ -18,6 +20,9 @@ s.waitForBoot {
     var timestamp = Date.getDate.stamp.replace(":", "-");
     var logPath = "/root/Bela/projects/Biodata/midiLog_" ++ timestamp ++ ".csv";
     ~logFile = File(logPath, "w");
+    
+	// Inicializar el cliente OSC de la pantalla
+	n = NetAddr("localhost", 7562); // Puerto 7562 (definido en OLED project)
 
     if(~logFile.isOpen) {
         "Archivo CSV abierto: %\n".format(logPath).postln;
@@ -111,12 +116,17 @@ s.waitForBoot {
 	
 	    // Seguridad para escribir en CSV
 	    if(~logFile.notNil and: { ~logFile.isOpen }) {
-	        ("Registrando nota: % % %\n".format(note, vel, chan)).postln;
+	        //("Registrando nota: % % %\n".format(note, vel, chan)).postln;
 	        ~logFile.write(timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",on\n");
 	        ~logFile.flush;  // importante
 	    } {
 	        "No se pudo escribir en archivo".postln;
 	    };
+	    
+	    // Envía mensaje OSC a la pantalla
+	    //n.sendMsg("/display-text", "Note", note.asString, "Vel: " ++ vel.asString);
+	    n.sendMsg("/display-strings-and-numbers", "NoteOn", note, "v" ++ vel);
+	    
     });
 
     // Note OFF
