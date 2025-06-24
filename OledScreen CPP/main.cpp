@@ -4,7 +4,7 @@
 |  _ \|  _| | |     / _ \
 | |_) | |___| |___ / ___ \
 |____/|_____|_____/_/   \_\
-
+    
 The platform for ultra-low latency audio and sensor processing
 
 http://bela.io

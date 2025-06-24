@@ -1,3 +1,27 @@
+/*
+___                               _________
+  /     \    _._.   ___     __   \_    __/  _ _    __     __
+ /  \ /  \  <   |  | / __\   /  _ \    |    |    |  |  \  /    \  / _ \
+/    Y    \  \_  | \  \_  (  <> )   |    |    |  |  / |   |  \ \  __/
+\__|_  /  / ___|  \_  >  \__/    |__|    |__/  |_|  /  \_  >
+        \/   \/           \/                                    \/       \/
+
+*/
+
+//// Project MycoTune
+/// Art Director Santiago Morilla
+/// Sound Designer and NIME Joaku de Sotavento & b1tdreamer
+///
+
+/// Version 0.1 Samplers Manipulation and MIDI reading
+
+/*
+
+Primer version de synth granular para el bela controlada por biodata, genera polyfonias pero tienen un time out para
+que paren los samplers despues de unos segundos
+
+*/
+
 
 s = Server.default;
 
@@ -18,9 +42,9 @@ s.waitForBoot {
 
     // Generar timestamp para el archivo
     var timestamp = Date.getDate.stamp.replace(":", "-");
-    var logPath = "/root/Bela/projects/Biodata/midiLog_" ++ timestamp ++ ".csv";
+	var logPath = "/root/Bela/projects/MycoTune/logs/midiLog_" ++ timestamp ++ ".csv";
     ~logFile = File(logPath, "w");
-    
+
 	// Inicializar el cliente OSC de la pantalla
 	n = NetAddr("localhost", 7562); // Puerto 7562 (definido en OLED project)
 
@@ -111,9 +135,9 @@ s.waitForBoot {
 	        \reverse, 0.0,
 	        \gate, 1
 	    ]);
-        
+
         ~voices[note] = synth;
-	
+
 	    // Seguridad para escribir en CSV
 	    if(~logFile.notNil and: { ~logFile.isOpen }) {
 	        //("Registrando nota: % % %\n".format(note, vel, chan)).postln;
@@ -122,11 +146,11 @@ s.waitForBoot {
 	    } {
 	        "No se pudo escribir en archivo".postln;
 	    };
-	    
+
 	    // Envía mensaje OSC a la pantalla
 	    //n.sendMsg("/display-text", "Note", note.asString, "Vel: " ++ vel.asString);
 	    n.sendMsg("/display-strings-and-numbers", "NoteOn", note, "v" ++ vel);
-	    
+
     });
 
     // Note OFF
@@ -134,7 +158,7 @@ s.waitForBoot {
 	    var timestamp = Date.getDate.stamp.replace(":", "-");
 	    var synth = ~voices[note];
 	    ~logFile.write(timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",off\n");
-	    
+
 	    if(synth.notNil and: { synth.isPlaying }) {
 	        synth.set(\gate, 0);
 	        ~voices.removeAt(note);
@@ -142,19 +166,19 @@ s.waitForBoot {
 	        ~voices.removeAt(note);
 	    };
 	});
-	
+
 	//// Crear la rutina para hacer un "flush" del archivo cada minuto
 	Routine({
 	    inf.do { |i|
 	        // Espera 60 segundos
 	        60.wait;
-	
+
 	        // Hacer un "flush" del archivo CSV
 	        ~logFile.flush;
 	        "CSV file flushed.".postln;
 	    };
 	}).play;
-    
+
 };
 
 // Cerrar archivo y salir al apagar el servidor
