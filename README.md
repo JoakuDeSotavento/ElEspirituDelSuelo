@@ -8,7 +8,7 @@ Repository for the proyect El Espíritu del Suelo, from the Artist Santiago Mori
 Cargar el proyecto de la carpeta OledScreen CPP - En mi bela el proyecto se llama Pantalla_-020 pero podemos cambiarlo a oledScreen para estandarizar
 
 1. Es necesario ejecutar el proyecto de OLED desde la terminal accediendo a /Bela/projects/Pantalla_-_O2O
-2. ejecutar en la consola de bela: /bin/bash ./projects/Pantalla_-_O2O/runme.sh
+2. ejecutar en la consola de bela: /bin/bash ./projects/pantallita/runme.sh
 
 ### Creando el servicio del control de la pantalla oled
 
