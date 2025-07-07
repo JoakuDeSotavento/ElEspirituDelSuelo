@@ -16,15 +16,15 @@ He creado un archivo en el proyecto abierto con el nombreDelServicio.service usa
 
 ```
 [Unit]
-Description=EXEC_NAME Launcher
+Description=OLED Screen Launcher
 After=network-online.target
 
 [Service]
-ExecStart=EXEC_DIR/EXEC_NAME
+ExecStart=/bin/bash /root/Bela/projects/Pantalla_-_O2O/runme.sh
 Type=simple
 Restart=always
 RestartSec=1
-WorkingDirectory=EXEC_DIR
+WorkingDirectory=/root/Bela/projects/
 Environment=HOME=/root
 KillMode=process
 
@@ -34,12 +34,18 @@ WantedBy=default.target
 
 Donde EXEC_NAME es el nombre del servicio (O del archivo a ejecutar, en este caso runme.sh) y EXEC_DIR el directorio
 
-Usaremos:
+Usaremos (donde oledScreen es EXEC_NAME):
 
-- Para que el servicio se arranque al inicio
+- Para arrancar el servicio
 	systemctl start oledScreen
-- Para deshabilitarlo
+- Para pararlo
 	systemctl stop oledScreen
+- Para que el servicio se arranque al inicio
+	systemctl enable oledScreen
+- Para deshabilitarlo
+	systemctl disable oledScreen
+- Si quieres revisar los logs del servicio
+	journalctl -fu oledScreen
 
 Base: https://learn.bela.io/using-bela/bela-techniques/running-a-program-as-a-service/
 
