@@ -36,7 +36,11 @@ WantedBy=default.target
 
 Donde EXEC_NAME es el nombre del servicio (O del archivo a ejecutar, en este caso runme.sh) y EXEC_DIR el directorio
 
-Usaremos (donde oledScreen es EXEC_NAME):
+Usaremos (donde pantallita es EXEC_NAME):
+
+Una vez creado el servicio en el proyecto o crearlo en la compu y subirlo al proyecto ejecutar el siguiente comando:
+
+```mv /root/Bela/projects/CURRENT_PROJECT_NAME/EXEC_NAME.service /lib/systemd/system/```
 
 - Para arrancar el servicio
 	systemctl start oledScreen
