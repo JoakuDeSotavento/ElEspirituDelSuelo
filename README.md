@@ -1,6 +1,8 @@
 # ElEspirituDelSuelo
 Repository for the proyect El Espíritu del Suelo, from the Artist Santiago Morilla. Sound Design and Electronics designed by Joaku De Sotavent following Santiagos Vision.
 
+Creative coding by Joaku De Sotavento and b1tdreamer
+
 # Documentation by b1tdreamer:
 
 ## Control de pantalla OLED
