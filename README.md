@@ -7,9 +7,9 @@ Creative coding by Joaku De Sotavento and b1tdreamer
 
 ## Control de pantalla OLED
 
-Cargar el proyecto de la carpeta OledScreen CPP - En mi bela el proyecto se llama Pantalla_-020 pero podemos cambiarlo a oledScreen para estandarizar
+Cargar el proyecto de la carpeta OledScreen CPP - En mi bela el proyecto se llama pantallita
 
-1. Es necesario ejecutar el proyecto de OLED desde la terminal accediendo a /Bela/projects/Pantalla_-_O2O
+1. Es necesario ejecutar el proyecto de OLED desde la terminal accediendo a /Bela/projects/pantallita
 2. ejecutar en la consola de bela: /bin/bash ./projects/pantallita/runme.sh
 
 ### Creando el servicio del control de la pantalla oled
@@ -22,7 +22,7 @@ Description=OLED Screen Launcher
 After=network-online.target
 
 [Service]
-ExecStart=/bin/bash /root/Bela/projects/Pantalla_-_O2O/runme.sh
+ExecStart=/bin/bash /root/Bela/projects/pantallita/runme.sh
 Type=simple
 Restart=always
 RestartSec=1
