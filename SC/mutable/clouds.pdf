@@ -1,0 +1,146 @@
+// intento de portar el clouds para bela
+
+(
+SynthDef(\miClouds, {
+    arg out=0, in=0, pit=0, pos=0.5, size=0.25, dens=0.4, tex=0.5, drywet=0.5, in_gain=1,
+    spread=0.5, rvb=0, fb=0, freeze=0, mode=0, lofi=0, trig=1, gate=1, amp=1;
+
+    var input, sig, env;
+
+    // La entrada de audio se define con In.ar
+    input = In.ar(in, 2);
+
+    // Envolvente para controlar la amplitud general del sinte
+    env = EnvGen.kr(Env.adsr(0.01, 0.1, 0.8, 0.1), gate, doneAction: 2);
+
+    // El UGen MiClouds procesa la señal de entrada
+    sig = MiClouds.ar(
+        inputArray: input,
+        pit: pit,
+        pos: pos,
+        size: size,
+        dens: dens,
+        tex: tex,
+        drywet: drywet,
+        in_gain: in_gain,
+        spread: spread,
+        rvb: rvb,
+        fb: fb,
+        freeze: freeze,
+        mode: mode,
+        lofi: lofi,
+        trig: trig
+    );
+
+    // Se aplica la envolvente y la amplitud final
+    sig = sig * env * amp;
+
+    // La señal se envía a la salida de audio
+    Out.ar(out, sig);
+}).add;
+)
+
+
+
+
+e = Buffer.read(s, Platform.resourceDir +/+ "sounds/a11wlk01-44_1.aiff");
+
+(  // basic granulation
+{
+	var input = PlayBuf.ar(1, b, 1, loop: 1)!2;
+
+	var dens = LFNoise1.kr(0.3).range(0.3, 0.45);
+	MiClouds.ar(input, 0, 0, 0, dens, 0.5, drywet: 1, mode: 0);
+
+}.play
+)
+
+
+
+
+(  //
+{
+	var imp = Dust.ar([0.8,1.1]);
+	var freq = Latch.ar(PinkNoise.ar(24,80), imp).midicps;
+	var input = RLPF.ar(imp, freq, 0.002, 4);
+
+	var pit = LFNoise1.kr(0.3,12);
+	var pos = LFNoise2.kr(0.4,0.5,0.5);
+	var size = LFNoise1.kr(0.3,0.5,0.5);
+	var dens = LFNoise1.kr(0.3,0.5,0.5);
+	var tex = LFNoise1.kr(0.3,0.5,0.5);
+
+	var frez = LFClipNoise.kr(0.3);
+
+	MiClouds.ar(input, pit, pos, size, dens, tex, drywet: 0.5, in_gain: 2, rvb:0.3, fb: 0.8,
+		freeze: frez, lofi: 1, mode: 0);
+
+}.play
+)
+
+
+
+more:
+
+
+(  // using external grain trigger
+{
+	var input = PlayBuf.ar(1, b, 1, loop: 1)!2;
+
+	var dens = 0.5;
+	var trig = Dust.kr(10);
+
+	MiClouds.ar(input, -5, 0, 0.2, dens, 0.5, trig: trig, drywet: 1, mode: 0);
+
+}.play
+)
+
+
+
+// freezing and scratching
+(
+SynthDef(\scratch, { arg bufnum=0, freeze=0, mode=0;
+	var input = PlayBuf.ar(1, bufnum, 1, loop: 1)!2;
+	var position = LFNoise1.kr(0.5,0.5,0.5);
+	Out.ar(0, MiClouds.ar(input, 0, position, 0.1, 1, 0.5, drywet: 1, freeze: freeze, mode: mode));
+}).add;
+)
+
+x = Synth(\scratch)
+x.set(\freeze, 1)   // freeze internal buffer
+x.set(\freeze, 0)
+x.set(\mode, 1)
+x.set(\mode, 2)
+x.free
+
+
+
+
+(  // spectral mode (this mode causes high CPU peaks!)
+{
+	var input = PlayBuf.ar(1, b, 1, loop: 1)!2;
+
+	var size = 0.35;
+	var dens = 0.02;
+	var tex = 0.3;
+
+	MiClouds.ar(input, 0, 0, size, dens, tex, drywet: 1, rvb: 0.8, fb: 0.8, mode: 3);
+
+}.play
+)
+
+
+(  // more spectral stuff, WATCH THE VOLUME!
+{
+	var input = PlayBuf.ar(1, b, 1, loop: 1)!2;
+
+	var size = LFNoise1.kr(0.2).range(0.1,0.5).squared;
+	var dens = LFNoise1.kr(0.3,0.5,0.5);
+	var tex = LFNoise1.kr(0.3,0.5,0.5);
+
+	MiClouds.ar(input, 0, 0, size, dens, tex, drywet: 1, rvb: 0.6, fb: 0.6, lofi: 1, mode: 3);
+
+}.play
+)
+
+b.free
