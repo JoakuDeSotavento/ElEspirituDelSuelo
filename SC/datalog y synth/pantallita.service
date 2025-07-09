@@ -1,0 +1,15 @@
+[Unit]
+Description=OLED Screen Launcher
+After=network-online.target
+
+[Service]
+ExecStart=/bin/bash /root/Bela/projects/pantallita/runme.sh
+Type=simple
+Restart=always
+RestartSec=1
+WorkingDirectory=/root/Bela/projects/
+Environment=HOME=/root
+KillMode=process
+
+[Install]
+WantedBy=default.target
