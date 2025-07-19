@@ -32,6 +32,9 @@ s.options.numDigitalChannels = 16;
 s.options.blockSize = 16;
 s.options.numInputBusChannels = 2;
 s.options.numOutputBusChannels = 2;
+s.options.pgaGainLeft = 40;
+s.options.pgaGainRight = 40;
+
 
 s.options.postln;
 
@@ -56,7 +59,7 @@ s.waitForBoot {
     };
 
     // Cargar el buffer de audio
-    ~buf = Buffer.read(s, "TALLERMASSANA.wav");
+    ~buf = Buffer.read(s, "WANG.wav");
 
     // Definir el sintetizador
     SynthDef(\midiSamplePlayer, {
@@ -113,6 +116,22 @@ s.waitForBoot {
         Out.ar([0,1], sound * gain);                // envía a salidas físicas 0 y 1
     }).add;
 
+    SynthDef.new(\micsYeah,
+{ |outBus=0|
+
+var volum = AnalogIn.ar(1).exprange(1, 40);
+//var volum = 0.5;
+var micros = SoundIn.ar([0]);
+var micros2 = SoundIn.ar([1]);
+var sig1, sig2;
+
+sig1 = micros * volum;
+	// this is the stereo part
+sig2 = micros2 * volum;
+
+	Out.ar(0, [sig1, sig2]);
+}).add;
+
 
     s.sync;
 
@@ -122,6 +141,8 @@ s.waitForBoot {
 
     // Lanzar control maestro de volumen
     Synth(\masterVol, [\inBus, ~masterBus]);
+
+	k = Synth.new(\micsYeah, [\outBus, ~masterBus]);
 
     // Inicializar MIDI
     MIDIClient.init;
