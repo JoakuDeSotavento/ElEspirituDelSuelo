@@ -59,14 +59,18 @@ s.waitForBoot {
     };
 
     // Cargar el buffer de audio
-    ~buf = Buffer.read(s, "TALLERMASSANA.wav");
+    ~bufBack = Buffer.read(s, "caveTexture.wav");
+    ~bufVoices = Buffer.read(s,"vozSanti2.wav");
 
-    // Definir el sintetizador
+	// Definir el sintetizador
+
+	// definir synth voces
     SynthDef(\midiSamplePlayer, {
         |outBus=0, bufnum=0, amp=0.5, rate=1.0, start=0.0, end=0.1, gate=1, reverse=0.0, timeoutSecs=5|
         var sig, numFrames, startPos, endPos, pointer, env;
         var kStart, kEnd, phasorRate, resetTrig, resetPos;
-        var playStart, playEnd, autoRelease, finalGate, masterVol;
+        var playStart, playEnd, autoRelease, finalGate;
+        var volume;
 
         numFrames = BufFrames.kr(bufnum);
         kStart = Lag.kr(start, 0.02).clip(0.0, 1.0);
@@ -102,9 +106,9 @@ s.waitForBoot {
         );
 
         sig = BufRd.ar(2, bufnum, pointer, interpolation: 2);
-        masterVol = Lag.ar(AnalogIn.ar(0), 0.1);
-        //sig = sig * amp * env * masterVol;
+        volume = AnalogIn.kr(3).exprange(0.01, 1);
         sig = sig * amp * env;
+        sig = sig * volume;
         Out.ar(outBus, sig ! 2);
     }).add;
 
@@ -112,25 +116,34 @@ s.waitForBoot {
     SynthDef(\masterVol, {
         |inBus=0|
         var sound = In.ar(inBus, 2);                // lee bus maestro (estéreo)
-        var gain  = Lag.ar(AnalogIn.ar(0), 0.1);      // suaviza entrada analógica canal 0
+        var gain  = AnalogIn.kr(0).exprange(0.01, 10);      // suaviza entrada analógica canal 0
         Out.ar([0,1], sound * gain);                // envía a salidas físicas 0 y 1
     }).add;
 
-    SynthDef.new(\micsYeah,
-{ |outBus=0|
+    SynthDef.new(\micsYeah,{
+    	|outBus=0|
+		var volum = AnalogIn.kr(1).exprange(1, 40);
+		//var volum = 0.5;
+		var micros = SoundIn.ar([0]);
+		var micros2 = SoundIn.ar([1]);
+		var sig1, sig2;
 
-var volum = AnalogIn.ar(1).exprange(1, 40);
-//var volum = 0.5;
-var micros = SoundIn.ar([0]);
-var micros2 = SoundIn.ar([1]);
-var sig1, sig2;
-
-sig1 = micros * volum;
-	// this is the stereo part
-sig2 = micros2 * volum;
-
+		sig1 = micros * volum;
+		// this is the stereo part
+		sig2 = micros2 * volum;
 	Out.ar(0, [sig1, sig2]);
 }).add;
+
+//definir synth de fondo
+	SynthDef(\textBack, {
+		|outBus=0, bufnum=0, rate=1.0, start=0.0, loop=1.0, t_trigger=1.0, doneaction=2|
+		var sig;
+		var amp = AnalogIn.kr(2).exprange(0.01, 1);
+
+		sig = PlayBuf.ar(2, bufnum, rate, t_trigger, start, loop, doneaction);
+		sig = sig * amp;
+        Out.ar(outBus, sig ! 2);
+	}).add;
 
 
     s.sync;
@@ -143,6 +156,7 @@ sig2 = micros2 * volum;
     Synth(\masterVol, [\inBus, ~masterBus]);
 
 	k = Synth.new(\micsYeah, [\outBus, ~masterBus]);
+	f = Synth(\textBack, [\outBus, ~masterBus, \bufnum, ~bufBack]);
 
     // Inicializar MIDI
     MIDIClient.init;
@@ -163,7 +177,7 @@ sig2 = micros2 * volum;
 	    var now = Date.getDate.stamp.replace(":", "-");
 	    var synth = Synth(\midiSamplePlayer, [
 	        \outBus, ~masterBus,
-	        \bufnum, ~buf,
+	        \bufnum, ~bufVoices,
 	        \start, startPos,
 	        \amp, amp,
 	        \rate, ~rate,
