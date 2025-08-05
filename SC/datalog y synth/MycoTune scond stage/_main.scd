@@ -13,7 +13,7 @@ ___                               _________
 /// Sound Designer and NIME Joaku de Sotavento & b1tdreamer
 ///
 
-/// Version 0.1 Samplers Manipulation and MIDI reading
+/// Version 0.2 Samplers Manipulation and MIDI reading and mics
 
 /*
 
@@ -27,9 +27,9 @@ s = Server.default;
 
 // Configuración de Bela
 s.options.numAnalogInChannels = 8;
-s.options.numAnalogOutChannels = 8;
-s.options.numDigitalChannels = 16;
-s.options.blockSize = 16;
+s.options.numAnalogOutChannels = 0;
+s.options.numDigitalChannels = 4;
+s.options.blockSize = 32;
 s.options.numInputBusChannels = 2;
 s.options.numOutputBusChannels = 2;
 s.options.pgaGainLeft = 40;
@@ -59,7 +59,7 @@ s.waitForBoot {
     };
 
     // Cargar el buffer de audio
-    ~buf = Buffer.read(s, "WANG.wav");
+    ~buf = Buffer.read(s, "TALLERMASSANA.wav");
 
     // Definir el sintetizador
     SynthDef(\midiSamplePlayer, {
@@ -179,6 +179,7 @@ sig2 = micros2 * volum;
 	        //("Registrando nota: % % %\n".format(note, vel, chan)).postln;
 	        ~logFile.write(timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",on\n");
 	        ~logFile.flush;  // importante
+	        "Nota grabada".postln;
 	    } {
 	        "No se pudo escribir en archivo".postln;
 	    };
@@ -202,7 +203,7 @@ sig2 = micros2 * volum;
 	        ~voices.removeAt(note);
 	    };
 	});
-
+/*
 	//// Crear la rutina para hacer un "flush" del archivo cada minuto
 	Routine({
 	    inf.do { |i|
@@ -214,7 +215,7 @@ sig2 = micros2 * volum;
 	        "CSV file flushed.".postln;
 	    };
 	}).play;
-
+*/
 };
 
 // Cerrar archivo y salir al apagar el servidor
