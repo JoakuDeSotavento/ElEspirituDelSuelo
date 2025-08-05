@@ -43,15 +43,15 @@ Una vez creado el servicio en el proyecto o crearlo en la compu y subirlo al pro
 ```mv /root/Bela/projects/CURRENT_PROJECT_NAME/EXEC_NAME.service /lib/systemd/system/```
 
 - Para arrancar el servicio
-	systemctl start oledScreen
+	systemctl start pantallita
 - Para pararlo
-	systemctl stop oledScreen
+	systemctl stop pantallita
 - Para que el servicio se arranque al inicio
-	systemctl enable oledScreen
+	systemctl enable pantallita
 - Para deshabilitarlo
-	systemctl disable oledScreen
+	systemctl disable pantallita
 - Si quieres revisar los logs del servicio
-	journalctl -fu oledScreen
+	journalctl -fu pantallita
 
 Base: https://learn.bela.io/using-bela/bela-techniques/running-a-program-as-a-service/
 
