@@ -90,7 +90,7 @@ s.waitForBoot {
 
         env = EnvGen.kr(Env.asr(0.01, 1, 0.1), finalGate, doneAction: 2);
 
-        pointer = Phasor.ar(trigger: 0, rate: phasorRate, start: playStart, end: playEnd, resetPos: resetPos);
+        pointer = Phasor.ar(trigger: 0, rate: phasorRate, start: playStart, end: playEnd, resetPos: resetPos, doneAction: 2);
 
         resetTrig = Select.kr(reverse > 0.5, [
             (pointer >= endPos),
@@ -136,12 +136,14 @@ s.waitForBoot {
 
 //definir synth de fondo
 	SynthDef(\textBack, {
-		|outBus=0, bufnum=0, rate=1.0, start=0.0, loop=1.0, t_trigger=1.0, doneaction=2|
-		var sig;
+		|outBus=0, bufnum=0, rate=1.0, start=0.0, loop=1.0, t_trigger=1.0, filter=2, freq=440, doneaction=2|
+		var sig, env, filtro;
 		var amp = AnalogIn.kr(2).exprange(0.01, 1);
 
+		//env = EnvGen.kr(Env.perc(level:amp), doneAction:2);
 		sig = PlayBuf.ar(2, bufnum, rate, t_trigger, start, loop, doneaction);
-		sig = sig * amp;
+		filtro = LPF.ar(sig, freq*filter);
+		sig = filtro * amp;
         Out.ar(outBus, sig ! 2);
 	}).add;
 
@@ -164,11 +166,20 @@ s.waitForBoot {
 
     ~voices = IdentityDictionary.new;
     ~rate = 1.0;
+    ~freq = 440;
 
     // Control de pitch vía CC
     MIDIdef.cc(\rateControl, { |val, num, chan|
         ~rate = val.linlin(0, 127, -2.0, 2.0);
     }, ccNum: 80);
+
+    // Midi para controlar variables y actualizarlas en los otros synth'synth
+    MIDIdef.noteOn(\varUpdate, {|vel, note, chan, src|
+    	var freq = note.linlin(36, 96, 110.0, 880.0).clip(110.0, 880.0);
+    	//var freq = note.midicps;
+    	f.set(\freq, freq);
+    });
+
 
     // Note ON
     MIDIdef.noteOn(\sampleNoteOn, { |vel, note, chan, src|
@@ -213,8 +224,10 @@ s.waitForBoot {
 	    if(synth.notNil and: { synth.isPlaying }) {
 	        synth.set(\gate, 0);
 	        ~voices.removeAt(note);
+	        "remove a voice".postln;
 	    } {
 	        ~voices.removeAt(note);
+	        "remove a voice".postln;
 	    };
 	});
 /*
