@@ -60,7 +60,60 @@ s.waitForBoot {
 
     // Cargar el buffer de audio
     ~bufBack = Buffer.read(s, "caveTexture.wav");
-    ~bufVoices = Buffer.read(s,"vozSanti2.wav");
+    ~bufBack2 = Buffer.read(s, "Fabrica_Wang.wav");
+    ~bufBack3 = Buffer.read(s, "ventiladores_wang.wav");
+    ~bufVoices = Buffer.read(s,"STE-060-edit.wav");
+    ~bufVoices2 = Buffer.read(s,"STE-061-edit.wav");
+    ~bufVoices3 = Buffer.read(s,"STE-067-edit.wav");
+    ~bufVoicesBase = ~bufVoices;
+
+    // codigo para leer los botones
+
+    ~buttonMonitor = {
+	var d1 = DigitalIn.kr(0); // Digital pin 0 - Button
+	var d2 = DigitalIn.kr(1); // Digital pin 0 - Button
+	//SendReply.kr([Changed.kr(d1), Changed.kr(d2)], '/buttonMonitor', [d1, d2]);
+	SendReply.kr([Changed.kr(d1), Changed.kr(d2)], '/buttonMonitor', [d1, d2]);
+	}.play;
+
+    	// synth's OSC
+
+	OSCdef('listenToButtons', {
+		arg msg;
+		var trigger1, trigger2;
+		// Buttons
+		// el valor del mensaje comienza con el 3
+		// el 0 es la etuqueta OSC, el 1 es 1000, 2 es -1 y 3 es el valor del mensaje y se podrian poner más valores
+		//trigger1 = msg[3].asInteger;
+		//trigger1.postln;
+		//trigger2 = msg[4].asInteger;
+		//trigger2.postln;
+		msg.postln;
+		if([msg[3], msg[4] ] == [0, 1],{r.next});
+		if([msg[3], msg[4] ] == [1, 0],{v.next});
+	}, '/buttonMonitor');
+
+	// en esta rutina vamos a cambiar el buffer del sonido de fondo, si funciona haremos lo mismo para
+	// las voces humanas
+	(
+	r = Routine({
+		inf.do{
+		("Estado 1 fondo".postln; f.set(\bufnum, ~bufBack2)).yield;
+		("Estado 2 fondo".postln; f.set(\bufnum, ~bufBack3)).yield;
+		("Estado 3 fondo".postln; f.set(\bufnum, ~bufBack)).yield;
+		}
+	})
+	);
+
+	(
+	v = Routine({
+		inf.do{
+		("Estado 1 voces".postln; ~bufVoicesBase= ~bufVoices2).yield;
+		("Estado 2 voces".postln; ~bufVoicesBase= ~bufVoices3).yield;
+		("Estado 3 voces".postln; ~bufVoicesBase= ~bufVoices).yield;
+		}
+	})
+	);
 
 	// Definir el sintetizador
 
@@ -106,7 +159,7 @@ s.waitForBoot {
         );
 
         sig = BufRd.ar(2, bufnum, pointer, interpolation: 2);
-        volume = AnalogIn.kr(3).exprange(0.01, 1);
+        volume = AnalogIn.kr(3).exprange(0.01, 2);
         sig = sig * amp * env;
         sig = sig * volume;
         Out.ar(outBus, sig ! 2);
@@ -134,7 +187,8 @@ s.waitForBoot {
 	Out.ar(0, [sig1, sig2]);
 }).add;
 
-//definir synth de fondo
+
+//definir synth de fondo o base
 	SynthDef(\textBack, {
 		|outBus=0, bufnum=0, rate=1.0, start=0.0, loop=1.0, t_trigger=1.0, filter=2, freq=440, doneaction=2|
 		var sig, env, filtro;
@@ -151,13 +205,17 @@ s.waitForBoot {
     s.sync;
 
 
+
+
     // Crear bus maestro estéreo
     ~masterBus = Bus.audio(s, 2);
 
     // Lanzar control maestro de volumen
     Synth(\masterVol, [\inBus, ~masterBus]);
 
+	// Este es el synth para los microfonos
 	k = Synth.new(\micsYeah, [\outBus, ~masterBus]);
+	// Este es el synth para el sonido de fondo o base
 	f = Synth(\textBack, [\outBus, ~masterBus, \bufnum, ~bufBack]);
 
     // Inicializar MIDI
@@ -188,7 +246,7 @@ s.waitForBoot {
 	    var now = Date.getDate.stamp.replace(":", "-");
 	    var synth = Synth(\midiSamplePlayer, [
 	        \outBus, ~masterBus,
-	        \bufnum, ~bufVoices,
+	        \bufnum, ~bufVoicesBase,
 	        \start, startPos,
 	        \amp, amp,
 	        \rate, ~rate,
@@ -204,7 +262,7 @@ s.waitForBoot {
 	        //("Registrando nota: % % %\n".format(note, vel, chan)).postln;
 	        ~logFile.write(timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",on\n");
 	        ~logFile.flush;  // importante
-	        "Nota grabada".postln;
+	        //"Nota grabada".postln;
 	    } {
 	        "No se pudo escribir en archivo".postln;
 	    };
@@ -224,12 +282,13 @@ s.waitForBoot {
 	    if(synth.notNil and: { synth.isPlaying }) {
 	        synth.set(\gate, 0);
 	        ~voices.removeAt(note);
-	        "remove a voice".postln;
+	        //"remove a voice".postln;
 	    } {
 	        ~voices.removeAt(note);
-	        "remove a voice".postln;
+	        //"remove a voice".postln;
 	    };
 	});
+
 /*
 	//// Crear la rutina para hacer un "flush" del archivo cada minuto
 	Routine({

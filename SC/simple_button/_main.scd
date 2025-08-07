@@ -38,9 +38,6 @@ s.options.numOutputBusChannels = 2;
 s.options.belaMaxScopeChannels = 8;
 
 s.waitForBoot {
-	// Your code goes here.
-
-	// counter for the switch cas
 
 	~crlButton = 0;
 
@@ -59,8 +56,6 @@ r = Routine({
 	}
 })
 );
-
-//if( msg[1] ==1, {r.next})
 
 	OSCdef('listenToButtons', {
 			arg msg;
