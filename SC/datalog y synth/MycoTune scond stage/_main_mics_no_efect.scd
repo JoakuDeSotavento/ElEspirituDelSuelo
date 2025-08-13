@@ -13,7 +13,7 @@ ___                               _________
 /// Sound Designer and NIME Joaku de Sotavento & b1tdreamer
 ///
 
-/// Version 0.2 Samplers Manipulation and MIDI reading and mics
+/// Version 0.3 Samplers Manipulation, MIDI writing, mics and it's effects
 
 /*
 

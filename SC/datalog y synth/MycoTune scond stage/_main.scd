@@ -255,14 +255,14 @@ s.waitForBoot {
     MIDIdef.cc(\rateControl, { |val, num, chan|
         ~rate = val.linlin(0, 127, -2.0, 2.0);
         //~rate.postln;
-    }, ccNum: 80);
+    }, ccNum: 80, chan: 1);
 
     // Midi para controlar variables y actualizarlas en los otros synth'synth
     MIDIdef.noteOn(\varUpdate, {|vel, note, chan, src|
     	var freq = note.linlin(36, 96, 110.0, 880.0).clip(110.0, 880.0);
     	//var freq = note.midicps;
     	f.set(\freq, freq);
-    });
+    }, chan:1);
 
 
     // Note ON
@@ -297,7 +297,7 @@ s.waitForBoot {
 	    //n.sendMsg("/display-text", "Note", note.asString, "Vel: " ++ vel.asString);
 	    n.sendMsg("/display-strings-and-numbers", "NoteOn", note, "v" ++ vel);
 
-    });
+    }, chan: 1);
 
     // Note OFF
     MIDIdef.noteOff(\sampleNoteOff, { |vel, note, chan, src|
@@ -313,7 +313,7 @@ s.waitForBoot {
 	        ~voices.removeAt(note);
 	        //"remove a voice".postln;
 	    };
-	});
+	}, chan: 1);
 
 /*
 	//// Crear la rutina para hacer un "flush" del archivo cada minuto
