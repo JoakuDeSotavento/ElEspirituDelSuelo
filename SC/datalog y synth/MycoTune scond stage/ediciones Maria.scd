@@ -119,7 +119,7 @@ s.waitForBoot {
 
 	// definir synth voces
     SynthDef(\midiSamplePlayer, {
-        |outBus=0, bufnum=0, amp=0.5, rate=1.0, start=0.0, end=0.1, gate=1, reverse=0.0, timeoutSecs=5|
+        |outBus=0, bufnum=0, amp=0.5, rate=1.0, start=0.0, end=0.1, gate=1, reverse=0.0, timeoutSecs=5, pan = 0|
         var sig, numFrames, startPos, endPos, pointer, env;
         var kStart, kEnd, phasorRate, resetTrig, resetPos;
         var playStart, playEnd, autoRelease, finalGate;
@@ -172,7 +172,7 @@ s.waitForBoot {
         |inBus=0|
         var sound = In.ar(inBus, 2);                // lee bus maestro (estéreo)
         var gain  = AnalogIn.kr(0).exprange(0.01, 10);      // suaviza entrada analógica canal 0
-        Out.ar([0,1], sound * gain);                // envía a salidas físicas 0 y 1
+		Out.ar([0,1], sound * gain);                // envía a salidas físicas 0 y 1
     }).add;
 
     SynthDef.new(\micsYeah,{
@@ -253,9 +253,12 @@ s.waitForBoot {
 
     // Control de pitch vía CC
     MIDIdef.cc(\rateControl, { |val, num, chan|
-        ~rate = val.linlin(0, 127, -2.0, 2.0);
+        ~rate = val.linlin(36, 96, -2.0, 2.0);
         //~rate.postln;
-    }, ccNum: 80);
+    },80
+	,//chanMIDI
+
+	);
 
     // Midi para controlar variables y actualizarlas en los otros synth'synth
     MIDIdef.noteOn(\varUpdate, {|vel, note, chan, src|
@@ -297,7 +300,9 @@ s.waitForBoot {
 	    //n.sendMsg("/display-text", "Note", note.asString, "Vel: " ++ vel.asString);
 	    n.sendMsg("/display-strings-and-numbers", "NoteOn", note, "v" ++ vel);
 
-    });
+    }, //notenum
+	, //MIDIChan
+	);
 
     // Note OFF
     MIDIdef.noteOff(\sampleNoteOff, { |vel, note, chan, src|

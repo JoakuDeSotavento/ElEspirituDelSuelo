@@ -13,7 +13,7 @@ ___                               _________
 /// Sound Designer and NIME Joaku de Sotavento & b1tdreamer
 ///
 
-/// Version 0.3 Samplers Manipulation, MIDI writing, mics and it's effects
+/// Version 0.2 Samplers Manipulation and MIDI reading and mics
 
 /*
 
@@ -62,7 +62,7 @@ s.waitForBoot {
     ~bufBack = Buffer.read(s, "caveTexture.wav");
     ~bufBack2 = Buffer.read(s, "Fabrica_Wang.wav");
     ~bufBack3 = Buffer.read(s, "ventiladores_wang.wav");
-    ~bufVoices = Buffer.read(s,"Track11_impro_laboral_03wav-editado.wav");
+    ~bufVoices = Buffer.read(s,"STE-060-edit.wav");
     ~bufVoices2 = Buffer.read(s,"STE-061-edit.wav");
     ~bufVoices3 = Buffer.read(s,"STE-067-edit.wav");
     ~bufVoicesBase = ~bufVoices;
@@ -80,7 +80,7 @@ s.waitForBoot {
 
 	OSCdef('listenToButtons', {
 		arg msg;
-		var trigger1, trigger2, trigger3, trigger4;
+		var trigger1, trigger2;
 		// Buttons
 		// el valor del mensaje comienza con el 3
 		// el 0 es la etuqueta OSC, el 1 es 1000, 2 es -1 y 3 es el valor del mensaje y se podrian poner más valores
@@ -138,7 +138,6 @@ s.waitForBoot {
 
         phasorRate = BufRateScale.kr(bufnum) * rate * Select.kr(reverse > 0.5, [-1, 1]);
 
-		timeoutSecs = AnalogIn.kr(4).exprange(0.1, 10.0);
         autoRelease = Done.kr(Line.kr(0, 0, timeoutSecs));
         finalGate = gate * (1 - autoRelease);
 
@@ -159,7 +158,6 @@ s.waitForBoot {
             resetPos: resetPos
         );
 
-
         sig = BufRd.ar(2, bufnum, pointer, interpolation: 2);
         volume = AnalogIn.kr(3).exprange(0.01, 2);
         sig = sig * amp * env;
@@ -176,40 +174,17 @@ s.waitForBoot {
     }).add;
 
     SynthDef.new(\micsYeah,{
-    var volum = AnalogIn.kr(1).exprange(1, 40);
-    var micros = SoundIn.ar([0]);
-    var micros2 = SoundIn.ar([1]);
-    var sig1, sig2;
-    var freq, amplitude, midiNote, gate;
+    	|outBus=0|
+		var volum = AnalogIn.kr(1).exprange(1, 40);
+		//var volum = 0.5;
+		var micros = SoundIn.ar([0]);
+		var micros2 = SoundIn.ar([1]);
+		var sig1, sig2;
 
-    // Audio (como antes)
-    sig1 = micros * volum;
-    sig2 = micros2 * volum;
-    Out.ar(0, [sig1, sig2]);
-	/*
-	// Detección de pitch
-    amplitude = Amplitude.kr(micros, 0.05, 0.05);
-    # pitch, hasFreq = Pitch.kr(micros, minFreq: 80, maxFreq: 2000);
-
-    // Solo cuando hay sonido suficiente
-    gate = (amplitude > 0.01) * hasFreq;
-    midiNote = pitch.cpsmidi.round(1).clip(0, 127);
-
-    // Enviar OSC /pisadas cuando detecta nota
-    SendReply.kr(gate, '/pisadas', [midiNote, pitch, amplitude]);
-    */
-
-    // Detección de frecuencia con ZeroCrossing (más eficiente)
-    amplitude = Amplitude.kr(micros, 0.05, 0.05);
-    freq = ZeroCrossing.ar(micros);
-
-    // Solo cuando hay sonido suficiente y frecuencia válida
-    gate = (amplitude > 0.01) * (freq > 80) * (freq < 2000);
-    midiNote = freq.cpsmidi.round(1).clip(0, 127);
-
-    // Enviar OSC /pisadas cuando detecta nota
-    SendReply.ar(gate, '/pisadas', [midiNote, freq, amplitude]);
-
+		sig1 = micros * volum;
+		// this is the stereo part
+		sig2 = micros2 * volum;
+	Out.ar(0, [sig1, sig2]);
 }).add;
 
 
@@ -254,7 +229,6 @@ s.waitForBoot {
     // Control de pitch vía CC
     MIDIdef.cc(\rateControl, { |val, num, chan|
         ~rate = val.linlin(0, 127, -2.0, 2.0);
-        //~rate.postln;
     }, ccNum: 80);
 
     // Midi para controlar variables y actualizarlas en los otros synth'synth
