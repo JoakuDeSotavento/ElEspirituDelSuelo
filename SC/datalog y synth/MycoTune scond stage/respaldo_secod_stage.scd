@@ -65,20 +65,15 @@ s.waitForBoot {
     ~bufVoices = Buffer.read(s,"Track11_impro_laboral_03wav-editado.wav");
     ~bufVoices2 = Buffer.read(s,"STE-061-edit.wav");
     ~bufVoices3 = Buffer.read(s,"STE-067-edit.wav");
-
-	// este esta porque el synth no se sintancia en inguna variable y es para poder cambiar lo que hay en esa variable que es a la que apunta el granulador
-	~bufVoicesBase = ~bufVoices;
+    ~bufVoicesBase = ~bufVoices;
 
     // codigo para leer los botones
 
     ~buttonMonitor = {
 	var d1 = DigitalIn.kr(0); // Digital pin 0 - Button
 	var d2 = DigitalIn.kr(1); // Digital pin 0 - Button
-	var d3 = DigitalIn.kr(2); // Digital pin 0 - Button
-	var d4 = DigitalIn.kr(3); // Digital pin 0 - Button
 	//SendReply.kr([Changed.kr(d1), Changed.kr(d2)], '/buttonMonitor', [d1, d2]);
-	// alargar
-	SendReply.kr([Changed.kr(d1), Changed.kr(d2), Changed.kr(d3), Changed.kr(d4)],  '/buttonMonitor', [d1, d2, d3, d4]);
+	SendReply.kr([Changed.kr(d1), Changed.kr(d2)], '/buttonMonitor', [d1, d2]);
 	}.play;
 
     	// synth's OSC
@@ -94,19 +89,14 @@ s.waitForBoot {
 		//trigger2 = msg[4].asInteger;
 		//trigger2.postln;
 		msg.postln;
-		// completar la logica para cambiar las rutinas
-		if([msg[3], msg[4], msg[5], msg[6]] == [1, 0, 0, 0],{g.next});
-		if([msg[3], msg[4], msg[5], msg[6]] == [0, 1, 0, 0],{p.next});
-		if([msg[3], msg[4], msg[5], msg[6]] == [0, 0, 1, 0],{f.next});
-		if([msg[3], msg[4], msg[5], msg[6]] == [0, 0, 0, 1],{v.next});
+		if([msg[3], msg[4] ] == [0, 1],{r.next});
+		if([msg[3], msg[4] ] == [1, 0],{v.next});
 	}, '/buttonMonitor');
 
 	// en esta rutina vamos a cambiar el buffer del sonido de fondo, si funciona haremos lo mismo para
 	// las voces humanas
-
-	//estas son los fondos
 	(
-	f = Routine({
+	r = Routine({
 		inf.do{
 		("Estado 1 fondo".postln; f.set(\bufnum, ~bufBack2)).yield;
 		("Estado 2 fondo".postln; f.set(\bufnum, ~bufBack3)).yield;
@@ -115,7 +105,6 @@ s.waitForBoot {
 	})
 	);
 
-	// estas son las voces
 	(
 	v = Routine({
 		inf.do{
@@ -126,48 +115,7 @@ s.waitForBoot {
 	})
 	);
 
-	// rutina para empezar a grabar o no datos
-	(
-	g = Routine({
-		inf.do{
-				("Estado 1 grabacion".postln; l.set(\state, 1)).yield;
-				("Estado 2 grabacion".postln; l.set(\state, 0)).yield;
-		}
-	})
-	);
-
-	// rutina para los modos de visualizacion
-	(
-	p = Routine({
-		inf.do{
-		("Estado 1 visualizacion".postln; m.set(\state, 1)).yield;
-		("Estado 2 visualizacion".postln; m.set(\state, 0)).yield;
-		}
-	})
-	);
-
-
 	// Definir el sintetizador
-
-	// crear aqui el SynthDef para la grabacion
-	SynthDef(\record, {
-        |state = 0|
-        // if record == 0 tu codigo
-		//var sound = In.ar(inBus, 2);                // lee bus maestro (estéreo)
-        //var gain  = AnalogIn.kr(0).exprange(0.01, 10);      // suaviza entrada analógica canal 0
-        //Out.ar([0,1], sound * gain);                // envía a salidas físicas 0 y 1
-    }).add;
-
-
-
-	// crear el SynthDef para la visualizacion
-	SynthDef(\viz, {
-        |state=0|
-        //var sound = In.ar(inBus, 2);                // lee bus maestro (estéreo)
-        //var gain  = AnalogIn.kr(0).exprange(0.01, 10);      // suaviza entrada analógica canal 0
-        //Out.ar([0,1], sound * gain);                // envía a salidas físicas 0 y 1
-    }).add;
-
 
 	// definir synth voces
     SynthDef(\midiSamplePlayer, {
@@ -254,9 +202,11 @@ s.waitForBoot {
     // Detección de frecuencia con ZeroCrossing (más eficiente)
     amplitude = Amplitude.kr(micros, 0.05, 0.05);
     freq = ZeroCrossing.ar(micros);
+
     // Solo cuando hay sonido suficiente y frecuencia válida
     gate = (amplitude > 0.01) * (freq > 80) * (freq < 2000);
     midiNote = freq.cpsmidi.round(1).clip(0, 127);
+
     // Enviar OSC /pisadas cuando detecta nota
     SendReply.ar(gate, '/pisadas', [midiNote, freq, amplitude]);
 
@@ -279,14 +229,11 @@ s.waitForBoot {
 
     s.sync;
 
-////////////////////////////////////*********************************//////////////////////////////////
-////////////////////////////////////*********************************//////////////////////////////////
+
+
 
     // Crear bus maestro estéreo
     ~masterBus = Bus.audio(s, 2);
-
-
-	////////// aquí se instancian los synth ////////////
 
     // Lanzar control maestro de volumen
     Synth(\masterVol, [\inBus, ~masterBus]);
@@ -295,14 +242,6 @@ s.waitForBoot {
 	k = Synth.new(\micsYeah, [\outBus, ~masterBus]);
 	// Este es el synth para el sonido de fondo o base
 	f = Synth(\textBack, [\outBus, ~masterBus, \bufnum, ~bufBack]);
-
-	// instanciar los synth de grabacion y visualización
-	// synth grabacion
-	l = Synth(\record, [\state, 0]);
-
-	// synth visualizacion
-	m = Synth(\viz, [\state, 0]);
-
 
     // Inicializar MIDI
     MIDIClient.init;
@@ -316,14 +255,14 @@ s.waitForBoot {
     MIDIdef.cc(\rateControl, { |val, num, chan|
         ~rate = val.linlin(0, 127, -2.0, 2.0);
         //~rate.postln;
-    }, ccNum: 80, chan: 1);
+    }, ccNum: 80);
 
     // Midi para controlar variables y actualizarlas en los otros synth'synth
     MIDIdef.noteOn(\varUpdate, {|vel, note, chan, src|
     	var freq = note.linlin(36, 96, 110.0, 880.0).clip(110.0, 880.0);
     	//var freq = note.midicps;
     	f.set(\freq, freq);
-    }, chan:1);
+    });
 
 
     // Note ON
@@ -358,7 +297,7 @@ s.waitForBoot {
 	    //n.sendMsg("/display-text", "Note", note.asString, "Vel: " ++ vel.asString);
 	    n.sendMsg("/display-strings-and-numbers", "NoteOn", note, "v" ++ vel);
 
-    }, chan: 1);
+    });
 
     // Note OFF
     MIDIdef.noteOff(\sampleNoteOff, { |vel, note, chan, src|
@@ -374,7 +313,7 @@ s.waitForBoot {
 	        ~voices.removeAt(note);
 	        //"remove a voice".postln;
 	    };
-	}, chan: 1);
+	});
 
 /*
 	//// Crear la rutina para hacer un "flush" del archivo cada minuto
