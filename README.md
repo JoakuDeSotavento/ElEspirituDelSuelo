@@ -14,7 +14,7 @@ Cargar el proyecto de la carpeta OledScreen CPP - En mi bela el proyecto se llam
 
 ### Creando el servicio del control de la pantalla oled
 
-He creado un archivo en el proyecto abierto con el nombreDelServicio.service usando esta plantilla:
+He creado un archivo en el proyecto abierto con el nombre pantallita.service usando esta plantilla:
 
 ```
 [Unit]
