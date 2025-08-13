@@ -95,10 +95,10 @@ s.waitForBoot {
 		//trigger2.postln;
 		msg.postln;
 		// completar la logica para cambiar las rutinas
-		if([msg[3], msg[4], msg[5], msg[6]] == [1, 0, 0, 0],{g.next});
-		if([msg[3], msg[4], msg[5], msg[6]] == [0, 1, 0, 0],{p.next});
-		if([msg[3], msg[4], msg[5], msg[6]] == [0, 0, 1, 0],{f.next});
-		if([msg[3], msg[4], msg[5], msg[6]] == [0, 0, 0, 1],{v.next});
+		if([msg[3], msg[4], msg[5], msg[6]] == [0.0, 1.0, 1.0, 1.0],{g.next});
+		if([msg[3], msg[4], msg[5], msg[6]] == [1.0, 0.0, 1.0, 1.0],{p.next});
+		if([msg[3], msg[4], msg[5], msg[6]] == [1.0, 1.0, 0.0, 1.0],{r.next});
+		if([msg[3], msg[4], msg[5], msg[6]] == [1.0, 1.0, 1.0, 0.0],{v.next});
 	}, '/buttonMonitor');
 
 	// en esta rutina vamos a cambiar el buffer del sonido de fondo, si funciona haremos lo mismo para
@@ -106,7 +106,7 @@ s.waitForBoot {
 
 	//estas son los fondos
 	(
-	f = Routine({
+	r = Routine({
 		inf.do{
 		("Estado 1 fondo".postln; f.set(\bufnum, ~bufBack2)).yield;
 		("Estado 2 fondo".postln; f.set(\bufnum, ~bufBack3)).yield;
@@ -316,14 +316,14 @@ s.waitForBoot {
     MIDIdef.cc(\rateControl, { |val, num, chan|
         ~rate = val.linlin(0, 127, -2.0, 2.0);
         //~rate.postln;
-    }, ccNum: 80, chan: 1);
+    }, ccNum: 80);
 
     // Midi para controlar variables y actualizarlas en los otros synth'synth
     MIDIdef.noteOn(\varUpdate, {|vel, note, chan, src|
     	var freq = note.linlin(36, 96, 110.0, 880.0).clip(110.0, 880.0);
     	//var freq = note.midicps;
     	f.set(\freq, freq);
-    }, chan:1);
+    });
 
 
     // Note ON
@@ -358,7 +358,7 @@ s.waitForBoot {
 	    //n.sendMsg("/display-text", "Note", note.asString, "Vel: " ++ vel.asString);
 	    n.sendMsg("/display-strings-and-numbers", "NoteOn", note, "v" ++ vel);
 
-    }, chan: 1);
+    });
 
     // Note OFF
     MIDIdef.noteOff(\sampleNoteOff, { |vel, note, chan, src|
@@ -374,7 +374,7 @@ s.waitForBoot {
 	        ~voices.removeAt(note);
 	        //"remove a voice".postln;
 	    };
-	}, chan: 1);
+	});
 
 /*
 	//// Crear la rutina para hacer un "flush" del archivo cada minuto
