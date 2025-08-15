@@ -84,16 +84,18 @@ s.waitForBoot {
     	// synth's OSC cada ves que hay una pisada que sobrepasa el umbral
 
 	OSCdef('listenMics', {
-		|msg, midiNote, freq, amplitude|
+		|msg|
+		var midiNote = msg[3].asInteger;
+		var freq = msg[4].asInteger;
+		var amplitude = msg[5].asFloat;
 		var startPos = midiNote.linlin(1, 127, 0.0, 1.0).clip(0.0, 1.0);
-	    var amp = amplitude.linlin(0.0, 1.0, 0.1, 1.0);
-	    var now = Date.getDate.stamp.replace(":", "-");
+		var amp = amplitude.linlin(0.01, 0.02, 0.1, 1.0).clip(0.1, 1.0);
 	    var synthPis = Synth(\midiSamplePlayer, [
 	        \outBus, ~masterBus,
 	        \bufnum, ~bufVoicesBase,
 	        \start, startPos,
 	        \amp, amp,
-	        \rate, freq,
+	        \rate, midiNote.midicps / 440.0,
 	        \end, 0.05,
 	        \reverse, 0.0,
 	        \gate, 1
@@ -101,6 +103,7 @@ s.waitForBoot {
 
         ~voicesPisadas[midiNote] = synthPis;
 
+		("midiNote " ++ midiNote ++ " freq " ++ freq ++ " amplitude " ++ amplitude).postln;
 
 		msg.postln;
 
@@ -214,7 +217,7 @@ s.waitForBoot {
 
 	// definir synth voces
     SynthDef(\midiSamplePlayer, {
-        |outBus=0, bufnum=0, amp=0.5, rate=1.0, start=0.0, end=0.1, gate=1, reverse=0.0, timeoutSecs=5|
+        |outBus=0, bufnum=0, amp=0.5, rate=1.0, start=0.0, end=0.1, gate=1, trigger=0, reverse=0.0, timeoutSecs=5|
         var sig, numFrames, startPos, endPos, pointer, env;
         var kStart, kEnd, phasorRate, resetTrig, resetPos;
         var playStart, playEnd, autoRelease, finalGate;
@@ -239,7 +242,7 @@ s.waitForBoot {
 
         env = EnvGen.kr(Env.asr(0.01, 1, 0.1), finalGate, doneAction: 2);
 
-        pointer = Phasor.ar(trigger: 0, rate: phasorRate, start: playStart, end: playEnd, resetPos: resetPos, doneAction: 2);
+        pointer = Phasor.ar(trigger: 0, rate: phasorRate, start: playStart, end: playEnd, resetPos: resetPos);
 
         resetTrig = Select.kr(reverse > 0.5, [
             (pointer >= endPos),
@@ -273,7 +276,8 @@ s.waitForBoot {
 	SynthDef.new(\micsYeah,{
 		var volum = AnalogIn.kr(1).exprange(1, 40);
 		var micros = SoundIn.ar([0]);
-		var micros2 = SoundIn.ar([1]);
+		//var micros2 = SoundIn.ar([1]);
+		var sensibility = AnalogIn.kr(5).exprange(1, 10);
 		var sig1, sig2;
 		var freq, amplitude, midiNote, gate;
 		var prevGate, noteOn, noteOff, currentNote, prevNote;
@@ -281,14 +285,17 @@ s.waitForBoot {
 
 		// Audio (como antes)
 		sig1 = micros * volum;
-		sig2 = micros2 * volum;
-		Out.ar(0, [sig1, sig2]);
+		//sig2 = micros2 * volum;
+		Out.ar(0, [sig1, sig1]);
+
+		// se ajusta la sensibilidad del reconocedor de freq y amplitud
+		micros = micros * sensibility;
 
 		// Detección de frecuencia con ZeroCrossing (más eficiente)
 		amplitude = Amplitude.ar(micros, 0.05, 0.05);
 		freq = ZeroCrossing.ar(micros);
 		// Solo cuando hay sonido suficiente y frecuencia válida
-		gate = (amplitude > 0.01) * (freq > 80) * (freq < 2000);
+		gate = (amplitude > 0.01) * (freq > 20) * (freq < 2000);
 		midiNote = freq.cpsmidi.round(1).clip(0, 127);
 
 		// detectar cambios de estado
@@ -303,7 +310,7 @@ s.waitForBoot {
 		SendReply.ar(noteOn, '/pisadas', [midiNote, freq, amplitude]);
 
 		// calcular el delay para noteOff basado en amplitud (1-10 secs)
-		offDelay = amplitude.linlin(0.01, 1.0, 1.0, 10.0).clip(1.0, 10.0);
+		offDelay = amplitude.linlin(0.01, 0.02, 1.0, 10.0).clip(1.0, 10.0);
 
 		// Trigger para el note off despues de la delay
 		offTrigger = TDelay.ar(noteOff, offDelay);
@@ -342,7 +349,7 @@ s.waitForBoot {
     Synth(\masterVol, [\inBus, ~masterBus]);
 
 	// Este es el synth para los microfonos
-	k = Synth.new(\micsYeah, [\outBus, ~masterBus]);
+	k = Synth(\micsYeah, [\outBus, ~masterBus]);
 	// Este es el synth para el sonido de fondo o base
 	f = Synth(\textBack, [\outBus, ~masterBus, \bufnum, ~bufBack]);
 
@@ -367,14 +374,14 @@ s.waitForBoot {
     MIDIdef.cc(\rateControl, { |val, num, chan|
         ~rate = val.linlin(0, 127, -2.0, 2.0);
         //~rate.postln;
-    }, ccNum: 80);
+    }, ccNum: 80, chan: 0);
 
     // Midi para controlar variables y actualizarlas en los otros synth'synth
     MIDIdef.noteOn(\varUpdate, {|vel, note, chan, src|
     	var freq = note.linlin(36, 96, 110.0, 880.0).clip(110.0, 880.0);
     	//var freq = note.midicps;
     	f.set(\freq, freq);
-    });
+    }, chan: 0);
 
 
     // Note ON
@@ -387,7 +394,7 @@ s.waitForBoot {
 	        \bufnum, ~bufVoicesBase,
 	        \start, startPos,
 	        \amp, amp,
-	        \rate, ~rate,
+			\rate, [note.midicps / 440, note.midicps / 220, note.midicps / 660, ~rate].wchoose([40, 30, 20, 10].normalizeSum),
 	        \end, 0.05,
 	        \reverse, 0.0,
 	        \gate, 1
@@ -409,7 +416,7 @@ s.waitForBoot {
 	    //n.sendMsg("/display-text", "Note", note.asString, "Vel: " ++ vel.asString);
 	    n.sendMsg("/display-strings-and-numbers", "NoteOn", note, "v" ++ vel);
 
-    });
+    }, chan: 0);
 
     // Note OFF
     MIDIdef.noteOff(\sampleNoteOff, { |vel, note, chan, src|
@@ -425,7 +432,7 @@ s.waitForBoot {
 	        ~voices.removeAt(note);
 	        //"remove a voice".postln;
 	    };
-	});
+	}, chan: 0);
 
 /*
 	//// Crear la rutina para hacer un "flush" del archivo cada minuto
