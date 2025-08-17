@@ -82,6 +82,9 @@ s.waitForBoot {
 	}.play;
 
     	// synth's OSC cada ves que hay una pisada que sobrepasa el umbral
+	// Inicializar el pool de voces (hazlo una vez al inicio)
+	// ~voicesPool = Array.newClear(10);
+	// ~voicesIndex = 0;
 
 	OSCdef('listenMics', {
 		|msg|
@@ -90,23 +93,32 @@ s.waitForBoot {
 		var amplitude = msg[5].asFloat;
 		var startPos = midiNote.linlin(1, 127, 0.0, 1.0).clip(0.0, 1.0);
 		var amp = amplitude.linlin(0.01, 0.02, 0.1, 1.0).clip(0.1, 1.0);
-	    var synthPis = Synth(\midiSamplePlayer, [
-	        \outBus, ~masterBus,
-	        \bufnum, ~bufVoicesBase,
-	        \start, startPos,
-	        \amp, amp,
-	        \rate, midiNote.midicps / 440.0,
-	        \end, 0.05,
-	        \reverse, 0.0,
-	        \gate, 1
-	    ]);
+		var synthPis; // Declarar aquí al inicio
+		// Si hay una voz anterior en esa posición del pool, liberarla
+		/*if(~voicesPool[~voicesIndex].notNil) {
+			~voicesPool[~voicesIndex].set(\gate, 0); // Release suave
+		};
+		*/
+		synthPis = Synth(\midiSamplePlayer, [
+			\outBus, ~masterBus,
+			\bufnum, ~bufVoicesBase,
+			\start, startPos,
+			\amp, amp,
+			\rate, midiNote.midicps / 880.0,
+			\end, 0.05,
+			\reverse, 0.0,
+			\gate, 1
+		]);
+		// Asignar al pool y actualizar índice
+		// ~voicesPool[~voicesIndex] = synthPis;
+		~voicesPisadas[midiNote] = synthPis;
+		// ~voicesIndex = (~voicesIndex + 1) % 10; // Circular
 
-        ~voicesPisadas[midiNote] = synthPis;
+		//~voicesPisadas[midiNote] = synthPis;
 
 		("midiNote " ++ midiNote ++ " freq " ++ freq ++ " amplitude " ++ amplitude).postln;
-
 		msg.postln;
-
+		// ("midiNote " ++ midiNote ++ " voices active: " ++ ~voicesPool.count({|x| x.notNil})).postln;
 	}, '/pisadas');
 
 	// synth OSC para limpiar las voces de las pisadas
@@ -236,7 +248,7 @@ s.waitForBoot {
 
         phasorRate = BufRateScale.kr(bufnum) * rate * Select.kr(reverse > 0.5, [-1, 1]);
 
-		timeoutSecs = AnalogIn.kr(4).exprange(0.1, 10.0);
+		timeoutSecs = AnalogIn.kr(4).exprange(1.0, 10.0);
         autoRelease = Done.kr(Line.kr(0, 0, timeoutSecs));
         finalGate = gate * (1 - autoRelease);
 
@@ -269,8 +281,11 @@ s.waitForBoot {
     SynthDef(\masterVol, {
         |inBus=0|
         var sound = In.ar(inBus, 2);                // lee bus maestro (estéreo)
-        var gain  = AnalogIn.kr(0).exprange(0.01, 10);      // suaviza entrada analógica canal 0
-        Out.ar([0,1], sound * gain);                // envía a salidas físicas 0 y 1
+        var gain  = AnalogIn.kr(0).exprange(0.01, 10);
+		// suaviza entrada analógica canal 0
+		var finalOut = Limiter.ar( sound, level: 0.8);
+
+        Out.ar([0,1], finalOut * gain );                // envía a salidas físicas 0 y 1
     }).add;
 
 	SynthDef.new(\micsYeah,{
@@ -391,10 +406,10 @@ s.waitForBoot {
 	    var now = Date.getDate.stamp.replace(":", "-");
 	    var synth = Synth(\midiSamplePlayer, [
 	        \outBus, ~masterBus,
-	        \bufnum, ~bufVoicesBase,
+			\bufnum, ~bufVoicesBase, // [b.bufnum, c.bufnum].choose;
 	        \start, startPos,
 	        \amp, amp,
-			\rate, [note.midicps / 440, note.midicps / 220, note.midicps / 660, ~rate].wchoose([40, 30, 20, 10].normalizeSum),
+			\rate, [note.midicps / 880, note.midicps / 1100, note.midicps / 440, ~rate].wchoose([40, 30, 20, 10].normalizeSum),
 	        \end, 0.05,
 	        \reverse, 0.0,
 	        \gate, 1
