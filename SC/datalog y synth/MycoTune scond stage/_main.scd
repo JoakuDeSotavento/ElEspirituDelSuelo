@@ -90,22 +90,36 @@ s.waitForBoot {
 		var amplitude = msg[5].asFloat;
 		var startPos = midiNote.linlin(1, 127, 0.0, 1.0).clip(0.0, 1.0);
 		var amp = amplitude.linlin(0.01, 0.02, 0.1, 1.0).clip(0.1, 1.0);
-	    var synthPis = Synth(\midiSamplePlayer, [
-	        \outBus, ~masterBus,
-	        \bufnum, ~bufVoicesBase,
-	        \start, startPos,
-	        \amp, amp,
-	        \rate, midiNote.midicps / 440.0,
-	        \end, 0.05,
-	        \reverse, 0.0,
-	        \gate, 1
-	    ]);
+		var synthPis; // Declarar aquí al inicio
+		var activeVoices;
 
-        ~voicesPisadas[midiNote] = synthPis;
+		// contar las voces activas
+		activeVoices = ~voicesPisadas.values.count({|x| x.notNil});
 
+		if(activeVoices < 10) {
+			synthPis = Synth(\midiSamplePlayer, [
+				\outBus, ~masterBus,
+				\bufnum, ~bufVoicesBase,
+				\start, startPos,
+				\amp, amp,
+				\rate, midiNote.midicps / 880.0,
+				\end, 0.05,
+				\reverse, 0.0,
+				\gate, 1
+			]);
+			// AUTO-LIMPIEZA: cuando el synth termine, limpiar la variable
+			synthPis.onFree({
+				~voicesPisadas[midiNote] = nil;
+			});
+
+			~voicesPisadas[midiNote] = synthPis;
+			("Nueva voz - midiNote " ++ midiNote ++ " - Voces activas: " ++ (activeVoices + 1)).postln;
+		}{
+			("Límite alcanzado - midiNote " ++ midiNote ++ " ignorado - Voces activas: " ++ activeVoices).postln;
+		};
 		("midiNote " ++ midiNote ++ " freq " ++ freq ++ " amplitude " ++ amplitude).postln;
 
-		msg.postln;
+		//msg.postln;
 
 	}, '/pisadas');
 
@@ -236,7 +250,7 @@ s.waitForBoot {
 
         phasorRate = BufRateScale.kr(bufnum) * rate * Select.kr(reverse > 0.5, [-1, 1]);
 
-		timeoutSecs = AnalogIn.kr(4).exprange(0.1, 10.0);
+		timeoutSecs = AnalogIn.kr(4).exprange(1.0, 5.0);
         autoRelease = Done.kr(Line.kr(0, 0, timeoutSecs));
         finalGate = gate * (1 - autoRelease);
 
@@ -269,8 +283,11 @@ s.waitForBoot {
     SynthDef(\masterVol, {
         |inBus=0|
         var sound = In.ar(inBus, 2);                // lee bus maestro (estéreo)
-        var gain  = AnalogIn.kr(0).exprange(0.01, 10);      // suaviza entrada analógica canal 0
-        Out.ar([0,1], sound * gain);                // envía a salidas físicas 0 y 1
+        var gain  = AnalogIn.kr(0).exprange(0.01, 10);
+		// suaviza entrada analógica canal 0
+		var finalOut = Limiter.ar( sound, level: 0.8);
+
+        Out.ar([0,1], finalOut * gain );                // envía a salidas físicas 0 y 1
     }).add;
 
 	SynthDef.new(\micsYeah,{
@@ -310,7 +327,7 @@ s.waitForBoot {
 		SendReply.ar(noteOn, '/pisadas', [midiNote, freq, amplitude]);
 
 		// calcular el delay para noteOff basado en amplitud (1-10 secs)
-		offDelay = amplitude.linlin(0.01, 0.02, 1.0, 10.0).clip(1.0, 10.0);
+		offDelay = amplitude.linlin(0.01, 0.02, 1.0, 10.0).clip(1.0, 5.0);
 
 		// Trigger para el note off despues de la delay
 		offTrigger = TDelay.ar(noteOff, offDelay);
@@ -384,39 +401,55 @@ s.waitForBoot {
     }, chan: 0);
 
 
-    // Note ON
-    MIDIdef.noteOn(\sampleNoteOn, { |vel, note, chan, src|
-        var startPos = note.linlin(36, 96, 0.0, 1.0).clip(0.0, 1.0);
-	    var amp = vel.linlin(1, 127, 0.1, 1.0);
-	    var now = Date.getDate.stamp.replace(":", "-");
-	    var synth = Synth(\midiSamplePlayer, [
-	        \outBus, ~masterBus,
-	        \bufnum, ~bufVoicesBase,
-	        \start, startPos,
-	        \amp, amp,
-			\rate, [note.midicps / 440, note.midicps / 220, note.midicps / 660, ~rate].wchoose([40, 30, 20, 10].normalizeSum),
-	        \end, 0.05,
-	        \reverse, 0.0,
-	        \gate, 1
-	    ]);
+	// Note ON
+	MIDIdef.noteOn(\sampleNoteOn, { |vel, note, chan, src|
+		var startPos = note.linlin(36, 96, 0.0, 1.0).clip(0.0, 1.0);
+		var amp = vel.linlin(1, 127, 0.1, 1.0);
+		var now = Date.getDate.stamp.replace(":", "-");
+		var synth;
+		var activeVoices;
 
-        ~voices[note] = synth;
+		// contar las voces activas
+		activeVoices = ~voices.values.count({|x| x.notNil});
 
-	    // Seguridad para escribir en CSV
-	    if(~logFile.notNil and: { ~logFile.isOpen }) {
-	        //("Registrando nota: % % %\n".format(note, vel, chan)).postln;
-	        ~logFile.write(timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",on\n");
-	        ~logFile.flush;  // importante
-	        //"Nota grabada".postln;
-	    } {
-	        "No se pudo escribir en archivo".postln;
-	    };
+		if(activeVoices < 10) {
+			synth = Synth(\midiSamplePlayer, [
+				\outBus, ~masterBus,
+				\bufnum, ~bufVoicesBase, // [b.bufnum, c.bufnum].choose;
+				\start, startPos,
+				\amp, amp,
+				\rate, [note.midicps / 880, note.midicps / 1100, note.midicps / 440, ~rate].wchoose([40, 30, 20, 10].normalizeSum),
+				\end, 0.05,
+				\reverse, 0.0,
+				\gate, 1
+			]);
+			synth.onFree({
+				~voices[note] = nil;
 
-	    // Envía mensaje OSC a la pantalla
-	    //n.sendMsg("/display-text", "Note", note.asString, "Vel: " ++ vel.asString);
-	    n.sendMsg("/display-strings-and-numbers", "NoteOn", note, "v" ++ vel);
+			});
 
-    }, chan: 0);
+			~voices[note] = synth;
+			("ChampiSynth nueva voz - midiNote " ++ note ++ " - Voces activas: " ++ (activeVoices + 1)).postln;
+		}{
+			("ChampiSynth límite alcanzado - midiNote " ++ note ++ " ignorado - Voces activas: " ++ activeVoices).postln;
+		};
+		("ChampiSynth " ++ note ++ " vel " ++ vel ++ " amplitude " ++ amp).postln;
+
+		// Seguridad para escribir en CSV
+		if(~logFile.notNil and: { ~logFile.isOpen }) {
+			//("Registrando nota: % % %\n".format(note, vel, chan)).postln;
+			~logFile.write(timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",on\n");
+			~logFile.flush;  // importante
+			//"Nota grabada".postln;
+		} {
+			"No se pudo escribir en archivo".postln;
+		};
+
+		// Envía mensaje OSC a la pantalla
+		//n.sendMsg("/display-text", "Note", note.asString, "Vel: " ++ vel.asString);
+		n.sendMsg("/display-strings-and-numbers", "NoteOn", note, "v" ++ vel);
+
+	}, chan: 0);
 
     // Note OFF
     MIDIdef.noteOff(\sampleNoteOff, { |vel, note, chan, src|
