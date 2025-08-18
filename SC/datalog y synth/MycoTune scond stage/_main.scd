@@ -42,21 +42,13 @@ s.options.postln;
 // Esperar a que el servidor arranque
 s.waitForBoot {
     // ==== SETUP ====
-
-    // Generar timestamp para el archivo
-    var timestamp = Date.getDate.stamp.replace(":", "-");
-	var logPath = "/root/Bela/projects/MycoTune/logs/midiLog_" ++ timestamp ++ ".csv";
-    ~logFile = File(logPath, "w");
-
+    ~timestamp = Date.getDate.stamp.replace(":", "-");
+	~logPath = "/root/Bela/projects/MycoTune/logs/midiLog_" ++ ~timestamp ++ ".csv";
+	~viz = 0;
+	~record = 0;
+			
 	// Inicializar el cliente OSC de la pantalla
 	n = NetAddr("localhost", 7562); // Puerto 7562 (definido en OLED project)
-
-    if(~logFile.isOpen) {
-        "Archivo CSV abierto: %\n".format(logPath).postln;
-        ~logFile.write("timestamp,note,velocity,channel,type\n");
-    } {
-        "No se pudo abrir archivo CSV.".postln;
-    };
 
     // Cargar el buffer de audio
     ~bufBack = Buffer.read(s, "caveTexture.wav");
@@ -190,8 +182,8 @@ s.waitForBoot {
 	(
 	g = Routine({
 		inf.do{
-				("Estado 1 grabacion".postln; l.set(\state, 1)).yield;
-				("Estado 2 grabacion".postln; l.set(\state, 0)).yield;
+				("Grabando".postln; l.set(\state, 1)).yield;
+				("Grabación parada".postln; l.set(\state, 0)).yield;
 		}
 	})
 	);
@@ -200,8 +192,8 @@ s.waitForBoot {
 	(
 	p = Routine({
 		inf.do{
-		("Estado 1 visualizacion".postln; m.set(\state, 1)).yield;
-		("Estado 2 visualizacion".postln; m.set(\state, 0)).yield;
+		("Visualizacion de datos".postln; m.set(\state, 1)).yield;
+		("Visualización de ondas".postln; m.set(\state, 0)).yield;
 		}
 	})
 	);
@@ -212,10 +204,27 @@ s.waitForBoot {
 	// crear aqui el SynthDef para la grabacion
 	SynthDef(\record, {
         |state = 0|
-        // if record == 0 tu codigo
-		//var sound = In.ar(inBus, 2);                // lee bus maestro (estéreo)
-        //var gain  = AnalogIn.kr(0).exprange(0.01, 10);      // suaviza entrada analógica canal 0
-        //Out.ar([0,1], sound * gain);                // envía a salidas físicas 0 y 1
+        if (state == 0){
+			"La grabación está parada".postln;
+		    ~record = 0;
+
+        }{
+        	"Comienza la grabación".postln;
+		    ~record = 1;
+		    
+        	// Generar timestamp para el archivo
+		    ~timestamp = Date.getDate.stamp.replace(":", "-");
+			~logPath = "/root/Bela/projects/MycoTune/logs/midiLog_" ++ ~timestamp ++ ".csv";
+		    ~logFile = File(~logPath, "w");
+		
+		    if(~logFile.isOpen) {
+		        "Archivo CSV abierto: %\n".format(~logPath).postln;
+		        ~logFile.write("timestamp,note,velocity,channel,type\n");
+		    } {
+		        "No se pudo abrir archivo CSV.".postln;
+		    };
+        }
+	    
     }).add;
 
 
@@ -223,9 +232,15 @@ s.waitForBoot {
 	// crear el SynthDef para la visualizacion
 	SynthDef(\viz, {
         |state=0|
-        //var sound = In.ar(inBus, 2);                // lee bus maestro (estéreo)
-        //var gain  = AnalogIn.kr(0).exprange(0.01, 10);      // suaviza entrada analógica canal 0
-        //Out.ar([0,1], sound * gain);                // envía a salidas físicas 0 y 1
+        
+        if (state == 0){
+			"Wave visualization".postln;
+		    ~viz = 0;
+        }{
+        	"Note visualization".postln;
+		    ~viz = 1;
+        }
+        
     }).add;
 
 
@@ -436,36 +451,50 @@ s.waitForBoot {
 		("ChampiSynth " ++ note ++ " vel " ++ vel ++ " amplitude " ++ amp).postln;
 
 		// Seguridad para escribir en CSV
-		if(~logFile.notNil and: { ~logFile.isOpen }) {
-			//("Registrando nota: % % %\n".format(note, vel, chan)).postln;
-			~logFile.write(timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",on\n");
-			~logFile.flush;  // importante
-			//"Nota grabada".postln;
-		} {
-			"No se pudo escribir en archivo".postln;
-		};
-
+		if (~record == 1){
+		    if(~logFile.notNil and: { ~logFile.isOpen }) {
+				//("Registrando nota: % % %\n".format(note, vel, chan)).postln;
+				~logFile.write(~timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",on\n");
+				~logFile.flush;  // importante
+				//"Nota grabada".postln;
+			} {
+				"No se pudo escribir en archivo".postln;
+			};
+	    };
+		
 		// Envía mensaje OSC a la pantalla
 		//n.sendMsg("/display-text", "Note", note.asString, "Vel: " ++ vel.asString);
-		n.sendMsg("/display-strings-and-numbers", "NoteOn", note, "v" ++ vel);
+		if (~viz == 1){
+			n.sendMsg("/display-strings-and-numbers", "Biodata"++chan, note, "v" ++ vel);
+		}{
+	        // Mapear note (36-96) a 0-1
+			var noteLfo = note.linlin(36, 96, 0.0, 1.0);
+			// Mapear velocity (1-127) a 0-1  
+			var velLfo = vel.linlin(1, 127, 0.0, 1.0);
+			// Mapear amp (ya calculado) a 0-1
+			var ampLfo = amp.clip(0.0, 1.0);
+			n.sendMsg("/lfos", noteLfo, velLfo, ampLfo);
+		}
 
 	}, chan: 0);
 
     // Note OFF
     MIDIdef.noteOff(\sampleNoteOff, { |vel, note, chan, src|
-	    var timestamp = Date.getDate.stamp.replace(":", "-");
-	    var synth = ~voices[note];
-	    ~logFile.write(timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",off\n");
+        var synth;
+        ~timestamp = Date.getDate.stamp.replace(":", "-");
+        synth = ~voices[note];
+        
+        if (~record == 1){
+            ~logFile.write(~timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",off\n");
+        }
 
-	    if(synth.notNil and: { synth.isPlaying }) {
-	        synth.set(\gate, 0);
-	        ~voices.removeAt(note);
-	        //"remove a voice".postln;
-	    } {
-	        ~voices.removeAt(note);
-	        //"remove a voice".postln;
-	    };
-	}, chan: 0);
+        if(synth.notNil and { synth.isPlaying }) {
+            synth.set(\gate, 0);
+            ~voices.removeAt(note);
+        } {
+            ~voices.removeAt(note);
+        };
+    }, chan: 0);
 
 /*
 	//// Crear la rutina para hacer un "flush" del archivo cada minuto
