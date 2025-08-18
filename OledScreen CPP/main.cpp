@@ -99,6 +99,7 @@ times a second.
 #include <iomanip>
 #include <MiscUtilities.h>
 #include <mutex>
+#include <string>
 
 std::mutex mtx;
 std::vector<bool> gShouldSend;
@@ -116,6 +117,13 @@ std::vector<Display> gDisplays = {
 unsigned int gActiveTarget = 0;
 const int gLocalPort = 7562; //port for incoming OSC messages
 
+int gStop = 0;
+
+// Variables globales para el header
+std::string gHeaderTitle = "MycoTune v2.1";
+std::string gHeaderSubtitle = "Biodata controlled soundscapes";
+std::string gHeaderStatus = ""; // Vacío por defecto (no muestra "Rec.")
+
 #ifdef I2C_MUX
 #include "TCA9548A.h"
 const unsigned int gMuxAddress = 0x70;
@@ -131,7 +139,6 @@ typedef enum {
 
 TargetMode gTargetMode = kTargetSingle; // can be changed with /targetMode
 OscReceiver oscReceiver;
-int gStop = 0;
 
 // Handle Ctrl-C by requesting that the audio rendering stop
 void interrupt_handler(int var)
@@ -161,13 +168,17 @@ void drawStaticHeader(U8G2& u8g2, int displayWidth) {
     u8g2.setFontRefHeightText();
     u8g2.setFontPosTop();
 
-    u8g2.drawStr(0, 0, "Micotune v.1");
+    // Título principal
+    u8g2.drawStr(0, 0, gHeaderTitle.c_str());
 
-    const char* recordingStr = "Rec.";
-    int textWidth = u8g2.getStrWidth(recordingStr);
-    u8g2.drawStr(displayWidth - textWidth, 0, recordingStr);
+    // Estado de grabación (solo si no está vacío)
+    if (!gHeaderStatus.empty()) {
+        int textWidth = u8g2.getStrWidth(gHeaderStatus.c_str());
+        u8g2.drawStr(displayWidth - textWidth, 0, gHeaderStatus.c_str());
+    }
 
-    u8g2.drawStr(0, 10, "Nature controlled soundscapes");
+    // Subtítulo
+    u8g2.drawStr(0, 10, gHeaderSubtitle.c_str());
 }
 
 int parseMessage(oscpkt::Message msg, const char* address, void*)
@@ -501,7 +512,15 @@ int parseMessage(oscpkt::Message msg, const char* address, void*)
 			printf("%s", out.c_str());
 #endif // PRINT_POINTS
 		}
-	} else
+	} else if (msg.match("/update-header")) {
+    std::string status;
+    if(args.popStr(status).isOkNoMoreArgs()) {
+        gHeaderStatus = status; // "Rec." para mostrar, "" para ocultar
+        printf("Header status updated to: %s\n", status.c_str());
+    } else {
+        error = kWrongArguments;
+    }
+} else
 		error = kUnmatchedPattern;
 	int ret = 0;
 	if(error)
@@ -567,8 +586,8 @@ int main(int main_argc, char *main_argv[])
 		u8g2.setFont(u8g2_font_4x6_tf);
 		u8g2.setFontRefHeightText();
 		u8g2.setFontPosTop();
-		u8g2.drawStr(0, 0, "MycoTune v1.0");
-		u8g2.drawStr(0, 7, "Fungy controlled soundscapes");
+		u8g2.drawStr(0, 0, "MycoTune v2.1");
+		u8g2.drawStr(0, 7, "Biodata controlled soundscapes");
 		u8g2.drawStr(0, 14, " __  __ __   __   _____   ____   ______ ");
 		u8g2.drawStr(0, 21, "|  \\/  |\\ \\ / /  / ____| / __ \\ |_   _| ");
 		u8g2.drawStr(0, 28, "| |\\/| | \\ V /  | |     | |  | |  | |   ");
@@ -579,8 +598,7 @@ int main(int main_argc, char *main_argv[])
 		u8g2.drawStr(0, 64, "");
 		if(gDisplays.size() > 1)
 		{
-			std::string targetString = "Target ID: " + std::to_string(n);
-			u8g2.drawStr(0, 50, targetString.c_str());
+			std::string targetString = "Target ID: " + std::to_string(n);			u8g2.drawStr(0, 50, targetString.c_str());
 		}
 		u8g2.sendBuffer();
 	}
