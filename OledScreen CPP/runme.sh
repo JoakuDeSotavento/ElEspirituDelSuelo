@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#se comenta todo eso para que no compile el proyecto al inicio, porque tiraba el proyecto del boot
-
 #PROJECT_DIR=$(dirname "$0") #note: this is _not_ the variable of the same name used `make` below: that's the Makefile's own
 #cd $PROJECT_DIR
 
@@ -12,5 +10,5 @@
 #make -C $BELA_HOME CFLAGS=-I\$\(PROJECT_DIR\)/u8g2/csrc CPPFLAGS=-I\$\(PROJECT_DIR\)/u8g2/csrc PROJECT="$PROJECT_NAME" $([ 0 -eq "$#" ] && echo run || echo $@)
 
 cd /root/Bela/projects/pantallita
-chmod +x pantallita
+#chmod +x pantallita
 ./pantallita
