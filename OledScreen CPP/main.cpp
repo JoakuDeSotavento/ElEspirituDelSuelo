@@ -373,10 +373,42 @@ int parseMessage(oscpkt::Message msg, const char* address, void*)
 		if(!args.popFloat(param1Value).popFloat(param2Value).popFloat(param3Value).isOkNoMoreArgs())
 			error = kWrongArguments;
 		printf("received /lfos float %f float %f float %f\n", param1Value, param2Value, param3Value);
-		u8g2.drawEllipse(displayWidth * 0.2, displayHeight * 0.5, 10, displayHeight * 0.5 * param1Value);
-		u8g2.drawEllipse(displayWidth * 0.5, displayHeight * 0.5, 10, displayHeight * 0.5 * param2Value);
-		u8g2.drawEllipse(displayWidth * 0.8, displayHeight * 0.5, 10, displayHeight * 0.5 * param3Value);
-		u8g2.drawHLine(0, displayHeight * 0.5, displayWidth);
+		u8g2.drawEllipse(displayWidth * 0.2, displayHeight * 0.6, 16, displayHeight * 0.4 * param1Value);
+		u8g2.drawEllipse(displayWidth * 0.5, displayHeight * 0.6, 16, displayHeight * 0.4 * param2Value);
+		u8g2.drawEllipse(displayWidth * 0.8, displayHeight * 0.6, 16, displayHeight * 0.4 * param3Value);
+		u8g2.drawHLine(0, displayHeight * 0.6, displayWidth);
+		u8g2.sendBuffer();
+		usleep(150000);
+		u8g2.setDrawColor(0);
+		u8g2.drawBox(0, 16, 128, 54);
+		u8g2.setDrawColor(1);
+		u8g2.drawEllipse(displayWidth * 0.2, displayHeight * 0.6, 14, displayHeight * 0.32 * param1Value);
+		u8g2.drawEllipse(displayWidth * 0.5, displayHeight * 0.6, 14, displayHeight * 0.32 * param2Value);
+		u8g2.drawEllipse(displayWidth * 0.8, displayHeight * 0.6, 14, displayHeight * 0.32 * param3Value);
+		u8g2.drawHLine(0, displayHeight * 0.6, displayWidth);
+		u8g2.sendBuffer();
+		usleep(150000);
+		u8g2.setDrawColor(0);
+		u8g2.drawBox(0, 16, 128, 54);
+		u8g2.setDrawColor(1);
+		u8g2.drawEllipse(displayWidth * 0.2, displayHeight * 0.6, 12, displayHeight * 0.21 * param1Value);
+		u8g2.drawEllipse(displayWidth * 0.5, displayHeight * 0.6, 12, displayHeight * 0.21 * param2Value);
+		u8g2.drawEllipse(displayWidth * 0.8, displayHeight * 0.6, 12, displayHeight * 0.21 * param3Value);
+		u8g2.drawHLine(0, displayHeight * 0.6, displayWidth);
+		u8g2.sendBuffer();
+		usleep(150000);
+		u8g2.setDrawColor(0);
+		u8g2.drawBox(0, 16, 128, 54);
+		u8g2.setDrawColor(1);
+		u8g2.drawEllipse(displayWidth * 0.2, displayHeight * 0.6, 10, displayHeight * 0.09 * param1Value);
+		u8g2.drawEllipse(displayWidth * 0.5, displayHeight * 0.6, 10, displayHeight * 0.09 * param2Value);
+		u8g2.drawEllipse(displayWidth * 0.8, displayHeight * 0.6, 10, displayHeight * 0.09 * param3Value);
+		u8g2.drawHLine(0, displayHeight * 0.6, displayWidth);
+		usleep(150000);
+		u8g2.setDrawColor(0);
+		u8g2.drawBox(0, 16, 128, 54);
+		u8g2.setDrawColor(1);
+		u8g2.drawHLine(0, displayHeight * 0.6, displayWidth);
 	} else if (msg.match("/waveform"))
 	{
 		const unsigned int nValues = args.nbArgRemaining();
