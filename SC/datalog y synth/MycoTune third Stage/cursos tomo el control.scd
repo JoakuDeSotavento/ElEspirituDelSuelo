@@ -13,7 +13,7 @@ ___                               _________
 /// Sound Designer and NIME Joaku de Sotavento & b1tdreamer
 ///
 
-/// Version 0.5 Samplers Manipulation, MIDI writing, mics and it's effects and visualizations
+/// Version 0.4 Samplers Manipulation, MIDI writing, mics and it's effects, and visualizations
 
 /*
 
@@ -43,7 +43,7 @@ s.options.postln;
 s.waitForBoot {
     // ==== SETUP ====
 
-// Generar timestamp para el archivo
+    // Generar timestamp para el archivo
     ~timestamp = Date.getDate.stamp.replace(":", "-");
 	~logPath = "";
 	~viz = 1;
@@ -183,51 +183,69 @@ s.waitForBoot {
 
 	// rutina para empezar a grabar o no datos
 	(
-		g = Routine({
-			inf.do{
-				(
-					~record = 1;
-					"Grabando".postln;
-
-					// Mostrar "Rec." en el header
-					n.sendMsg("/update-header", "Rec.");
-
-					// Generar timestamp para el archivo
-					~timestamp = Date.getDate.stamp.replace(":", "-");
-					~logPath = "/root/Bela/projects/MycoTune/logs/midiLog_" ++ ~timestamp ++ ".csv";
-					~logFile = File(~logPath, "w");
-
-					if(~logFile.isOpen) {
-						"Archivo CSV abierto: %\n".format(~logPath).postln;
-						~logFile.write("~timestamp,note,velocity,channel,type\n");
-					} {
-						"No se pudo abrir archivo CSV.".postln;
-					};
-				).yield;
-				(
-					~record = 0;
-					if(~logFile.notNil and: { ~logFile.isOpen }) {
-					~logFile.close;
-					"Archivo CSV cerrado.".postln;
-				};
-				"La grabación está parada".postln;
-
-				// Ocultar "Rec." del header
-				n.sendMsg("/update-header", "");
-				).yield;
-			}
-		})
+	g = Routine({
+		inf.do{
+				("Grabando".postln; l.set(\state, 1)).yield;
+				("Grabación parada".postln; l.set(\state, 0)).yield;
+		}
+	})
 	);
 
 	// rutina para los modos de visualizacion
 	(
 	p = Routine({
 		inf.do{
-		("Visualizando datos".postln; ~viz = 1).yield;
-		("Visualizando ondas".postln; ~viz = 0).yield;
+		("Visualizando datos".postln; m.set(\state, 1)).yield;
+		("Visualizando ondas".postln; m.set(\state, 0)).yield;
 		}
 	})
 	);
+
+    // crear aqui el SynthDef para la grabacion
+	SynthDef(\record, {
+        |state = 0|
+        if (state == 0){
+			"Comienza la grabación".postln;
+		    ~record = 1;
+			// Mostrar "Rec." en el header
+			n.sendMsg("/update-header", "Rec.");
+
+        	// Generar timestamp para el archivo
+			~timestamp = Date.getDate.stamp.replace(":", "-");
+			~logPath = "/root/Bela/projects/MycoTune/logs/midiLog_" ++ ~timestamp ++ ".csv";
+			~logFile = File(~logPath, "w");
+
+			if(~logFile.isOpen) {
+				"Archivo CSV abierto: %\n".format(~logPath).postln;
+				~logFile.write("~timestamp,note,velocity,channel,type\n");
+			} {
+				"No se pudo abrir archivo CSV.".postln;
+			};
+
+        }{
+        	"La grabación está parada".postln;
+		    ~record = 0;
+			// Ocultar "Rec." del header
+			n.sendMsg("/update-header", "");
+        }
+
+    }).add;
+
+
+
+		// crear el SynthDef para la visualizacion
+	SynthDef(\viz, {
+        |state=0|
+
+        if (state == 0){
+			"Note visualization".postln;
+		    ~viz = 0;
+        }{
+        	"Wave visualization".postln;
+		    ~viz = 1;
+        }
+
+    }).add;
 
 
 	// definir synth voces
@@ -371,6 +389,13 @@ s.waitForBoot {
 	// Este es el synth para el sonido de fondo o base
 	f = Synth(\textBack, [\outBus, ~masterBus, \bufnum, ~bufBack]);
 
+	// instanciar los synth de grabacion y visualización
+	// synth grabacion
+	l = Synth(\record, [\state, 0]);
+
+	// synth visualizacion
+	m = Synth(\viz, [\state, 0]);
+
 
     // Inicializar MIDI
     MIDIClient.init;
@@ -419,7 +444,6 @@ s.waitForBoot {
 			]);
 			synth.onFree({
 				~voices[note] = nil;
-
 			});
 
 			~voices[note] = synth;
@@ -457,13 +481,12 @@ s.waitForBoot {
 
     // Note OFF
     MIDIdef.noteOff(\sampleNoteOff, { |vel, note, chan, src|
-		var synth = ~voices[note];
+	    var synth = ~voices[note];
 
 		if (~record == 1){
 		    ~timestamp = Date.getDate.stamp.replace(":", "-");
 		    ~logFile.write(~timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",off\n");
 		};
-
 
 	    if(synth.notNil and: { synth.isPlaying }) {
 	        synth.set(\gate, 0);
@@ -475,6 +498,19 @@ s.waitForBoot {
 	    };
 	}, chan: 0);
 
+/*
+	//// Crear la rutina para hacer un "flush" del archivo cada minuto
+	Routine({
+	    inf.do { |i|
+	        // Espera 60 segundos
+	        60.wait;
+
+	        // Hacer un "flush" del archivo CSV
+	        ~logFile.flush;
+	        "CSV file flushed.".postln;
+	    };
+	}).play;
+*/
 };
 
 // Cerrar archivo y salir al apagar el servidor
