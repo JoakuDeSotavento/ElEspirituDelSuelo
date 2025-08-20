@@ -291,7 +291,7 @@ s.waitForBoot {
 
 
         sig = BufRd.ar(2, bufnum, pointer, interpolation: 2);
-        volume = AnalogIn.kr(5).exprange(0.01, 2);
+        volume = AnalogIn.kr(5).exprange(0.0001, 2);
         sig = sig * amp * env;
         sig = sig * volume;
         Out.ar(outBus, sig ! 2);
@@ -341,7 +341,7 @@ s.waitForBoot {
 
 
         sig = BufRd.ar(2, bufnum, pointer, interpolation: 2);
-        volume = AnalogIn.kr(4).exprange(0.01, 2);
+        volume = AnalogIn.kr(4).exprange(0.0001, 2);
         sig = sig * amp * env;
         sig = sig * volume;
         Out.ar(outBus, sig ! 2);
@@ -417,7 +417,7 @@ s.waitForBoot {
 	SynthDef(\textBack, {
 		|outBus=0, bufnum=0, rate=1.0, start=0.0, loop=1.0, t_trigger=1.0, filter=2, freq=440, doneaction=2|
 		var sig, env, filtro;
-		var amp = AnalogIn.kr(7).exprange(0.01, 1);
+		var amp = AnalogIn.kr(7).exprange(0.0001, 1);
 
 		//env = EnvGen.kr(Env.perc(level:amp), doneAction:2);
 		sig = PlayBuf.ar(2, bufnum, rate, t_trigger, start, loop, doneaction);

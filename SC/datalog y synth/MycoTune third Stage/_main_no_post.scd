@@ -1,3 +1,4 @@
+
 /*
 ___                               _________
   /     \    _._.   ___     __   \_    __/  _ _    __     __
@@ -13,14 +14,12 @@ ___                               _________
 /// Sound Designer and NIME Joaku de Sotavento & b1tdreamer
 ///
 
-/// Version 0.6 Samplers Manipulation, MIDI writing, mics and it's effects and visualizations
+/// Version 1 Samplers Manipulation, MIDI writing, mics and it's effects and visualizations
 // in this version its implemented the compressor and reordered the knobs and adding the volume to the synth for steps
-// next steps is to make the stadistically changing buffer
+// and stadistically changing buffer
 
 /*
 
-Primer version de synth granular para el bela controlada por biodata, genera polyfonias pero tienen un time out para
-que paren los samplers despues de unos segundos
 
 */
 
@@ -292,7 +291,7 @@ s.waitForBoot {
 
 
         sig = BufRd.ar(2, bufnum, pointer, interpolation: 2);
-        volume = AnalogIn.kr(5).exprange(0.01, 2);
+        volume = AnalogIn.kr(5).exprange(0.001, 2);
         sig = sig * amp * env;
         sig = sig * volume;
         Out.ar(outBus, sig ! 2);
@@ -342,7 +341,7 @@ s.waitForBoot {
 
 
         sig = BufRd.ar(2, bufnum, pointer, interpolation: 2);
-        volume = AnalogIn.kr(4).exprange(0.01, 2);
+        volume = AnalogIn.kr(4).exprange(0.001, 2);
         sig = sig * amp * env;
         sig = sig * volume;
         Out.ar(outBus, sig ! 2);
