@@ -1,4 +1,3 @@
-
 /*
 ___                               _________
   /     \    _._.   ___     __   \_    __/  _ _    __     __
@@ -14,12 +13,14 @@ ___                               _________
 /// Sound Designer and NIME Joaku de Sotavento & b1tdreamer
 ///
 
-/// Version 1 Samplers Manipulation, MIDI writing, mics and it's effects and visualizations
+/// Version 0.6 Samplers Manipulation, MIDI writing, mics and it's effects and visualizations
 // in this version its implemented the compressor and reordered the knobs and adding the volume to the synth for steps
-// and stadistically changing buffer
+// next steps is to make the stadistically changing buffer
 
 /*
 
+Primer version de synth granular para el bela controlada por biodata, genera polyfonias pero tienen un time out para
+que paren los samplers despues de unos segundos
 
 */
 

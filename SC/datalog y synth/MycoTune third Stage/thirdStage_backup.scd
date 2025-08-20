@@ -13,7 +13,7 @@ ___                               _________
 /// Sound Designer and NIME Joaku de Sotavento & b1tdreamer
 ///
 
-/// Version 0.3 Samplers Manipulation, MIDI writing, mics and it's effects
+/// Version 0.5 Samplers Manipulation, MIDI writing, mics and it's effects and visualizations
 
 /*
 
@@ -43,20 +43,15 @@ s.options.postln;
 s.waitForBoot {
     // ==== SETUP ====
 
-    // Generar timestamp para el archivo
-    var timestamp = Date.getDate.stamp.replace(":", "-");
-	var logPath = "/root/Bela/projects/MycoTune/logs/midiLog_" ++ timestamp ++ ".csv";
-    ~logFile = File(logPath, "w");
+// Generar timestamp para el archivo
+    ~timestamp = Date.getDate.stamp.replace(":", "-");
+	~logPath = "";
+	~viz = 1;
+	~record = 0;
+    ~logFile = File(~logPath, "w");
 
 	// Inicializar el cliente OSC de la pantalla
 	n = NetAddr("localhost", 7562); // Puerto 7562 (definido en OLED project)
-
-    if(~logFile.isOpen) {
-        "Archivo CSV abierto: %\n".format(logPath).postln;
-        ~logFile.write("timestamp,note,velocity,channel,type\n");
-    } {
-        "No se pudo abrir archivo CSV.".postln;
-    };
 
     // Cargar el buffer de audio
     ~bufBack = Buffer.read(s, "caveTexture.wav");
@@ -188,45 +183,51 @@ s.waitForBoot {
 
 	// rutina para empezar a grabar o no datos
 	(
-	g = Routine({
-		inf.do{
-				("Estado 1 grabacion".postln; l.set(\state, 1)).yield;
-				("Estado 2 grabacion".postln; l.set(\state, 0)).yield;
-		}
-	})
+		g = Routine({
+			inf.do{
+				(
+					~record = 1;
+					"Grabando".postln;
+
+					// Mostrar "Rec." en el header
+					n.sendMsg("/update-header", "Rec.");
+
+					// Generar timestamp para el archivo
+					~timestamp = Date.getDate.stamp.replace(":", "-");
+					~logPath = "/root/Bela/projects/MycoTune/logs/midiLog_" ++ ~timestamp ++ ".csv";
+					~logFile = File(~logPath, "w");
+
+					if(~logFile.isOpen) {
+						"Archivo CSV abierto: %\n".format(~logPath).postln;
+						~logFile.write("~timestamp,note,velocity,channel,type\n");
+					} {
+						"No se pudo abrir archivo CSV.".postln;
+					};
+				).yield;
+				(
+					~record = 0;
+					if(~logFile.notNil and: { ~logFile.isOpen }) {
+					~logFile.close;
+					"Archivo CSV cerrado.".postln;
+				};
+				"La grabación está parada".postln;
+
+				// Ocultar "Rec." del header
+				n.sendMsg("/update-header", "");
+				).yield;
+			}
+		})
 	);
 
 	// rutina para los modos de visualizacion
 	(
 	p = Routine({
 		inf.do{
-		("Estado 1 visualizacion".postln; m.set(\state, 1)).yield;
-		("Estado 2 visualizacion".postln; m.set(\state, 0)).yield;
+		("Visualizando datos".postln; ~viz = 1).yield;
+		("Visualizando ondas".postln; ~viz = 0).yield;
 		}
 	})
 	);
-
-
-	// Definir el sintetizador
-
-	// crear aqui el SynthDef para la grabacion
-	SynthDef(\record, {
-        |state = 0|
-        // if record == 0 tu codigo
-		//var sound = In.ar(inBus, 2);                // lee bus maestro (estéreo)
-        //var gain  = AnalogIn.kr(0).exprange(0.01, 10);      // suaviza entrada analógica canal 0
-        //Out.ar([0,1], sound * gain);                // envía a salidas físicas 0 y 1
-    }).add;
-
-
-
-	// crear el SynthDef para la visualizacion
-	SynthDef(\viz, {
-        |state=0|
-        //var sound = In.ar(inBus, 2);                // lee bus maestro (estéreo)
-        //var gain  = AnalogIn.kr(0).exprange(0.01, 10);      // suaviza entrada analógica canal 0
-        //Out.ar([0,1], sound * gain);                // envía a salidas físicas 0 y 1
-    }).add;
 
 
 	// definir synth voces
@@ -370,13 +371,6 @@ s.waitForBoot {
 	// Este es el synth para el sonido de fondo o base
 	f = Synth(\textBack, [\outBus, ~masterBus, \bufnum, ~bufBack]);
 
-	// instanciar los synth de grabacion y visualización
-	// synth grabacion
-	l = Synth(\record, [\state, 0]);
-
-	// synth visualizacion
-	m = Synth(\viz, [\state, 0]);
-
 
     // Inicializar MIDI
     MIDIClient.init;
@@ -435,27 +429,42 @@ s.waitForBoot {
 		};
 		("ChampiSynth " ++ note ++ " vel " ++ vel ++ " amplitude " ++ amp).postln;
 
-		// Seguridad para escribir en CSV
-		if(~logFile.notNil and: { ~logFile.isOpen }) {
-			//("Registrando nota: % % %\n".format(note, vel, chan)).postln;
-			~logFile.write(timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",on\n");
-			~logFile.flush;  // importante
-			//"Nota grabada".postln;
-		} {
-			"No se pudo escribir en archivo".postln;
-		};
+		if (~record == 1){
+		    if(~logFile.notNil and: { ~logFile.isOpen }) {
+				//("Registrando nota: % % %\n".format(note, vel, chan)).postln;
+				~logFile.write(~timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",on\n");
+				~logFile.flush;  // importante
+				"Nota grabada".postln;
+			} {
+				"No se pudo escribir en archivo".postln;
+			};
+	    };
 
 		// Envía mensaje OSC a la pantalla
-		//n.sendMsg("/display-text", "Note", note.asString, "Vel: " ++ vel.asString);
-		n.sendMsg("/display-strings-and-numbers", "NoteOn", note, "v" ++ vel);
+		if (~viz == 1){
+	        // Mapear note (36-96) a 0-1
+			var noteLfo = note.linlin(36, 96, 0.0, 1.0);
+			// Mapear velocity (1-127) a 0-1
+			var velLfo = vel.linlin(1, 127, 0.0, 0.7);
+			// Mapear amp (ya calculado) a 0-1
+			var ampLfo = amp.clip(0.0, 1.0);
+
+			n.sendMsg("/lfos", noteLfo, velLfo, ampLfo);
+		}{
+			n.sendMsg("/display-strings-and-numbers", "Biodata "++chan, note, "v" ++ vel);
+		}
 
 	}, chan: 0);
 
     // Note OFF
     MIDIdef.noteOff(\sampleNoteOff, { |vel, note, chan, src|
-	    var timestamp = Date.getDate.stamp.replace(":", "-");
-	    var synth = ~voices[note];
-	    ~logFile.write(timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",off\n");
+		var synth = ~voices[note];
+
+		if (~record == 1){
+		    ~timestamp = Date.getDate.stamp.replace(":", "-");
+		    ~logFile.write(~timestamp ++ "," ++ note.asString ++ "," ++ vel.asString ++ "," ++ chan.asString ++ ",off\n");
+		};
+
 
 	    if(synth.notNil and: { synth.isPlaying }) {
 	        synth.set(\gate, 0);
@@ -467,19 +476,6 @@ s.waitForBoot {
 	    };
 	}, chan: 0);
 
-/*
-	//// Crear la rutina para hacer un "flush" del archivo cada minuto
-	Routine({
-	    inf.do { |i|
-	        // Espera 60 segundos
-	        60.wait;
-
-	        // Hacer un "flush" del archivo CSV
-	        ~logFile.flush;
-	        "CSV file flushed.".postln;
-	    };
-	}).play;
-*/
 };
 
 // Cerrar archivo y salir al apagar el servidor
