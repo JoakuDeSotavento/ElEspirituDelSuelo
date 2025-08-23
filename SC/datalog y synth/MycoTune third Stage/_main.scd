@@ -240,8 +240,8 @@ s.waitForBoot {
 	(
 	p = Routine({
 		inf.do{
-		("Visualizando datos".postln; ~viz = 1).yield;
-		("Visualizando ondas".postln; ~viz = 0).yield;
+		("Visualizando ondas".postln; ~viz = 1).yield;
+		("Visualizando numeros".postln; ~viz = 0).yield;
 		}
 	})
 	);
@@ -291,67 +291,83 @@ s.waitForBoot {
 
 
         sig = BufRd.ar(2, bufnum, pointer, interpolation: 2);
-        volume = AnalogIn.kr(5).exprange(0.0001, 2);
+        volume = AnalogIn.kr(5).exprange(0.0001, 0.4);
         sig = sig * amp * env;
         sig = sig * volume;
+/*		sig = Compander.ar(sig, sig,
+			thresh: 0.5,
+			slopeBelow: 1,
+			slopeAbove: 0.5,
+			clampTime:  0.01,
+			relaxTime:  0.01
+		);*/
+		//sig =  Limiter.ar(sig, level: 0.3);
         Out.ar(outBus, sig ! 2);
     }).add;
 
 	// definir synth voces de las pisadas
-    SynthDef(\midiSamplePlayerPisadas, {
-        |outBus=0, bufnum=0, amp=0.5, rate=1.0, start=0.0, end=0.1, gate=1, trigger=0, reverse=0.0, timeoutSecs=5|
-        var sig, numFrames, startPos, endPos, pointer, env;
-        var kStart, kEnd, phasorRate, resetTrig, resetPos;
-        var playStart, playEnd, autoRelease, finalGate;
-        var volume;
+	SynthDef(\midiSamplePlayerPisadas, {
+		|outBus=0, bufnum=0, amp=0.5, rate=1.0, start=0.0, end=0.1, gate=1, trigger=0, reverse=0.0, timeoutSecs=5|
+		var sig, numFrames, startPos, endPos, pointer, env;
+		var kStart, kEnd, phasorRate, resetTrig, resetPos;
+		var playStart, playEnd, autoRelease, finalGate;
+		var volume;
 
-        numFrames = BufFrames.kr(bufnum);
-        kStart = Lag.kr(start, 0.02).clip(0.0, 1.0);
-        kEnd = Lag.kr(end, 0.02).clip(0.0, 1.0 - kStart);
+		numFrames = BufFrames.kr(bufnum);
+		kStart = Lag.kr(start, 0.02).clip(0.0, 1.0);
+		kEnd = Lag.kr(end, 0.02).clip(0.0, 1.0 - kStart);
 
-        startPos = kStart * numFrames;
-        endPos = (kStart + kEnd) * numFrames;
+		startPos = kStart * numFrames;
+		endPos = (kStart + kEnd) * numFrames;
 
-        playStart = Select.kr(reverse > 0.5, [startPos, endPos]);
-        playEnd = Select.kr(reverse > 0.5, [endPos, startPos]);
-        resetPos = playStart;
+		playStart = Select.kr(reverse > 0.5, [startPos, endPos]);
+		playEnd = Select.kr(reverse > 0.5, [endPos, startPos]);
+		resetPos = playStart;
 
-        phasorRate = BufRateScale.kr(bufnum) * rate * Select.kr(reverse > 0.5, [-1, 1]);
+		phasorRate = BufRateScale.kr(bufnum) * rate * Select.kr(reverse > 0.5, [-1, 1]);
 
 		timeoutSecs = AnalogIn.kr(2).exprange(1.0, 5.0);
-        autoRelease = Done.kr(Line.kr(0, 0, timeoutSecs));
-        finalGate = gate * (1 - autoRelease);
+		autoRelease = Done.kr(Line.kr(0, 0, timeoutSecs));
+		finalGate = gate * (1 - autoRelease);
 
-        env = EnvGen.kr(Env.asr(0.01, 1, 0.1), finalGate, doneAction: 2);
+		env = EnvGen.kr(Env.asr(0.01, 1, 0.1), finalGate, doneAction: 2);
 
-        pointer = Phasor.ar(trig: 0, rate: phasorRate, start: playStart, end: playEnd, resetPos: resetPos);
+		pointer = Phasor.ar(trig: 0, rate: phasorRate, start: playStart, end: playEnd, resetPos: resetPos);
 
-        resetTrig = Select.kr(reverse > 0.5, [
-            (pointer >= endPos),
-            (pointer <= startPos)
-        ]).lag(0.001);
+		resetTrig = Select.kr(reverse > 0.5, [
+			(pointer >= endPos),
+			(pointer <= startPos)
+		]).lag(0.001);
 
-        pointer = Phasor.ar(
-            trig: Trig.kr(resetTrig, 0.001),
-            rate: phasorRate,
-            start: playStart,
-            end: playEnd,
-            resetPos: resetPos
-        );
+		pointer = Phasor.ar(
+			trig: Trig.kr(resetTrig, 0.001),
+			rate: phasorRate,
+			start: playStart,
+			end: playEnd,
+			resetPos: resetPos
+		);
 
 
-        sig = BufRd.ar(2, bufnum, pointer, interpolation: 2);
-        volume = AnalogIn.kr(4).exprange(0.0001, 2);
-        sig = sig * amp * env;
-        sig = sig * volume;
-        Out.ar(outBus, sig ! 2);
-    }).add;
+		sig = BufRd.ar(2, bufnum, pointer, interpolation: 2);
+		volume = AnalogIn.kr(4).exprange(0.0001, 0.2);
+		sig = sig * amp * env;
+		sig = sig * volume;
+		/*sig = Compander.ar(sig, sig,
+			thresh: 0.5,
+			slopeBelow: 1,
+			slopeAbove: 0.5,
+			clampTime:  0.01,
+			relaxTime:  0.01
+		);
+		sig =  Limiter.ar(sig, level: 0.3);*/
+		Out.ar(outBus, sig ! 2);
+	}).add;
 
     // SynthDef: control maestro de volumen via entrada analógica 0
     SynthDef(\masterVol, {
         |inBus=0|
         var sound = In.ar(inBus, 2);                // lee bus maestro (estéreo)
-        var gain  = AnalogIn.kr(0).exprange(0.01, 10);
+        var gain  = AnalogIn.kr(0).exprange(0.01, 1.0);
 		// suaviza entrada analógica canal 0
 		var finalOut = Compander.ar(sound, sound,
 			thresh: 0.5,
@@ -366,10 +382,10 @@ s.waitForBoot {
     }).add;
 
 	SynthDef.new(\micsYeah,{
-		var volum = AnalogIn.kr(1).exprange(1, 60);
+		var volum = AnalogIn.kr(1).exprange(0.1, 1.0);
 		var micros = SoundIn.ar([0]);
 		//var micros2 = SoundIn.ar([1]);
-		var sensibility = AnalogIn.kr(3).exprange(1, 10);
+		var sensibility = AnalogIn.kr(3).exprange(0.1, 13.0);
 		var sig1, sig2;
 		var freq, amplitude, midiNote, gate;
 		var prevGate, noteOn, noteOff, currentNote, prevNote;
@@ -417,7 +433,7 @@ s.waitForBoot {
 	SynthDef(\textBack, {
 		|outBus=0, bufnum=0, rate=1.0, start=0.0, loop=1.0, t_trigger=1.0, filter=2, freq=440, doneaction=2|
 		var sig, env, filtro;
-		var amp = AnalogIn.kr(7).exprange(0.0001, 1);
+		var amp = AnalogIn.kr(7).exprange(0.0001, 0.9);
 
 		//env = EnvGen.kr(Env.perc(level:amp), doneAction:2);
 		sig = PlayBuf.ar(2, bufnum, rate, t_trigger, start, loop, doneaction);
@@ -480,7 +496,7 @@ s.waitForBoot {
 		// contar las voces activas
 		activeVoices = ~voices.values.count({|x| x.notNil});
 
-		if(activeVoices < 5) {
+		if(activeVoices < 3) {
 			synth = Synth(\midiSamplePlayer, [
 				\outBus, ~masterBus,
 				\bufnum, [~bufVoicesBase, ~bufVoicesBaseFX].wchoose([95, 5].normalizeSum), // [b.bufnum, c.bufnum].choose;
