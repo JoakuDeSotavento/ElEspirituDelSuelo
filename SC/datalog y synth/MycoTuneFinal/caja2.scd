@@ -6,7 +6,7 @@ ___                               _________
 /    Y    \  \_  | \  \_  (  <> )   |    |    |  |  / |   |  \ \  __/
 \__|_  /  / ___|  \_  >  \__/    |__|    |__/  |_|  /  \_  >
         \/   \/           \/                                    \/       \/
-Caja 2
+Caja 2 verde
 */
 
 //// Project MycoTune
@@ -28,12 +28,12 @@ s = Server.default;
 
 // Configuración de Bela
 s.options.numAnalogInChannels = 8;
-s.options.numAnalogOutChannels = 0;
+s.options.numAnalogOutChannels = 8;
 s.options.numDigitalChannels = 4;
 s.options.blockSize = 32;
 s.options.numInputBusChannels = 2;
 s.options.numOutputBusChannels = 2;
-s.options.pgaGainLeft = 40;
+s.options.pgaGainLeft = 50;
 s.options.pgaGainRight = 0;
 
 
@@ -60,19 +60,19 @@ s.waitForBoot {
     ~bufBack3 = Buffer.read(s, "FONDO-PITCHED-AMBIENCE-3.wav");
 
 	// archivos del champi
-    ~bufVoices = Buffer.read(s,"Track11_impro_laboral_03wav-editado.wav");
-    ~bufVoices2 = Buffer.read(s,"VOCES-GRAVES-Base_hongos-1.wav");
-    ~bufVoices3 = Buffer.read(s,"VOCES-GRAVES-Base_hongos-2.wav");
+    ~bufVoices = Buffer.read(s,"Track11_COCO_E.wav");
+    ~bufVoices2 = Buffer.read(s,"Track8_COCO_E.wav");
+    ~bufVoices3 = Buffer.read(s,"Track7_COCO_E.wav");
 
 	// archivos de efectos
 	~bufVoicesFx = Buffer.read(s,"chile_efex.wav");
-	~bufVoicesFx1 = Buffer.read(s,"FONDO-ASMR-CAVE-3.wav");
-	~bufVoicesFx2 = Buffer.read(s,"VOCES-GRAVES-Base_hongos-1.wav");
+	~bufVoicesFx1 = Buffer.read(s,"Track2_COCO_FX.wav");
+	~bufVoicesFx2 = Buffer.read(s,"Track5_COCO_FX.wav");
 
 	// archivos de las pisadas
-	~bufVoicesP = Buffer.read(s,"Voces_Agudas_COCO-4.wav");
-    ~bufVoicesP2 = Buffer.read(s,"Voces_Agudas_COCO-3.wav");
-    ~bufVoicesP3 = Buffer.read(s,"Voces_Agudas_COCO-2.wav");
+	~bufVoicesP = Buffer.read(s,"Track10_COCO_STEP.wav");
+    ~bufVoicesP2 = Buffer.read(s,"Track10_COCO_STEP.wav");
+    ~bufVoicesP3 = Buffer.read(s,"Track10_COCO_STEP.wav");
 
 	// este esta porque el synth no se sintancia en inguna variable y es para poder cambiar lo que hay en esa variable que es a la que apunta el granulador
 	~bufVoicesBase = ~bufVoices;
@@ -113,7 +113,7 @@ s.waitForBoot {
 				\start, startPos,
 				\amp, amp,
 				\rate, [midiNote.midicps / 660, midiNote.midicps / 880, ~rate].wchoose([50, 30, 20].normalizeSum),
-				\end, 0.05,
+				\end, 0.7,
 				\reverse, 0.0,
 				\gate, 1
 			]);
@@ -383,7 +383,7 @@ s.waitForBoot {
 		var volum = AnalogIn.kr(1).exprange(0.1, 1.0);
 		var micros = SoundIn.ar([0]);
 		//var micros2 = SoundIn.ar([1]);
-		var sensibility = AnalogIn.kr(3).exprange(0.1, 13.0);
+		var sensibility = AnalogIn.kr(3).exprange(0.1, 20.0);
 		var sig1, sig2;
 		var freq, amplitude, midiNote, gate;
 		var prevGate, noteOn, noteOff, currentNote, prevNote;

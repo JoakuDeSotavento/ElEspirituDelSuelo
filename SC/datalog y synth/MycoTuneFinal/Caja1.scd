@@ -58,23 +58,23 @@ s.waitForBoot {
 
 	// Archivos de los fondos
     ~bufBack = Buffer.read(s, "FONDO-ASMR-CAVE-1.wav");
-    ~bufBack2 = Buffer.read(s, "FONDO-ASMR-CAVE-2.wav");
+    ~bufBack2 = Buffer.read(s, "Fabrica_Wang.wav");
     ~bufBack3 = Buffer.read(s, "FONDO-ASMR-CAVE-3.wav");
 
 	// archivos del champi
-    ~bufVoices = Buffer.read(s,"Track11_impro_laboral_03wav-editado.wav");
-    ~bufVoices2 = Buffer.read(s,"VOCES-GRAVES-Base_hongos-1.wav");
-    ~bufVoices3 = Buffer.read(s,"VOCES-GRAVES-Base_hongos-2.wav");
+    ~bufVoices = Buffer.read(s,"Track12_COCO_E.wav");
+    ~bufVoices2 = Buffer.read(s,"Track4_COCO_E.wav");
+    ~bufVoices3 = Buffer.read(s,"Track6_COCO_E.wav");
 
 	// archivos de efectos
 	~bufVoicesFx = Buffer.read(s,"chile_efex.wav");
-	~bufVoicesFx1 = Buffer.read(s,"FONDO-ASMR-CAVE-3.wav");
-	~bufVoicesFx2 = Buffer.read(s,"VOCES-GRAVES-Base_hongos-1.wav");
+	~bufVoicesFx1 = Buffer.read(s,"Track1_COCO_FX.wav");
+	~bufVoicesFx2 = Buffer.read(s,"Track3_COCO_FX.wav");
 
 	// archivos de las pisadas
-	~bufVoicesP = Buffer.read(s,"Voces_Agudas_COCO-1.wav");
-    ~bufVoicesP2 = Buffer.read(s,"Voces_Agudas_COCO-2.wav");
-    ~bufVoicesP3 = Buffer.read(s,"Voces_Agudas_COCO-3.wav");
+	~bufVoicesP = Buffer.read(s,"Track9_COCO_STEP.wav");
+    ~bufVoicesP2 = Buffer.read(s,"Track9_COCO_STEP.wav");
+    ~bufVoicesP3 = Buffer.read(s,"Track9_COCO_STEP.wav");
 
 	// este esta porque el synth no se sintancia en inguna variable y es para poder cambiar lo que hay en esa variable que es a la que apunta el granulador
 	~bufVoicesBase = ~bufVoices;
@@ -115,7 +115,7 @@ s.waitForBoot {
 				\start, startPos,
 				\amp, amp,
 				\rate, [midiNote.midicps / 660, midiNote.midicps / 880, ~rate].wchoose([50, 30, 20].normalizeSum),
-				\end, 0.05,
+				\end, 0.7,
 				\reverse, 0.0,
 				\gate, 1
 			]);
@@ -349,7 +349,7 @@ s.waitForBoot {
 
 
 		sig = BufRd.ar(2, bufnum, pointer, interpolation: 2);
-		volume = AnalogIn.kr(4).exprange(0.0001, 0.2);
+		volume = AnalogIn.kr(4).exprange(0.0001, 0.3);
 		sig = sig * amp * env;
 		sig = sig * volume;
 		/*sig = Compander.ar(sig, sig,
@@ -385,7 +385,7 @@ s.waitForBoot {
 		var volum = AnalogIn.kr(1).exprange(0.1, 1.0);
 		var micros = SoundIn.ar([0]);
 		//var micros2 = SoundIn.ar([1]);
-		var sensibility = AnalogIn.kr(3).exprange(0.1, 13.0);
+		var sensibility = AnalogIn.kr(3).exprange(0.1, 20.0);
 		var sig1, sig2;
 		var freq, amplitude, midiNote, gate;
 		var prevGate, noteOn, noteOff, currentNote, prevNote;
