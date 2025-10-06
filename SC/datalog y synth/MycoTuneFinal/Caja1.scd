@@ -6,7 +6,7 @@ ___                               _________
 /    Y    \  \_  | \  \_  (  <> )   |    |    |  |  / |   |  \ \  __/
 \__|_  /  / ___|  \_  >  \__/    |__|    |__/  |_|  /  \_  >
         \/   \/           \/                                    \/       \/
-Caja 1 amarilla
+Caja 1 amarilla con ajustes Ars Electronica
 */
 
 //// Project MycoTune
@@ -114,7 +114,7 @@ s.waitForBoot {
 				\bufnum, [~bufVoicesBaseP, ~bufVoicesBaseFX].wchoose([95, 5].normalizeSum),
 				\start, startPos,
 				\amp, amp,
-				\rate, [midiNote.midicps / 660, midiNote.midicps / 880, ~rate].wchoose([50, 30, 20].normalizeSum),
+				\rate, [midiNote.midicps / 440, midiNote.midicps / 660, ~rate].wchoose([50, 30, 20].normalizeSum),
 				\end, 0.7,
 				\reverse, 0.0,
 				\gate, 1
@@ -125,11 +125,11 @@ s.waitForBoot {
 			});
 
 			~voicesPisadas[midiNote] = synthPis;
-		//	("Nueva voz - midiNote " ++ midiNote ++ " - Voces activas: " ++ (activeVoices + 1)).postln;
+			("Nueva voz - midiNote " ++ midiNote ++ " - Voces activas: " ++ (activeVoices + 1)).postln;
 		}{
-		//	("Límite alcanzado - midiNote " ++ midiNote ++ " ignorado - Voces activas: " ++ activeVoices).postln;
+			("Límite alcanzado - midiNote " ++ midiNote ++ " ignorado - Voces activas: " ++ activeVoices).postln;
 		};
-	//	("midiNote " ++ midiNote ++ " freq " ++ freq ++ " amplitude " ++ amplitude).postln;
+		("midiNote " ++ midiNote ++ " freq " ++ freq ++ " amplitude " ++ amplitude).postln;
 
 		//msg.postln;
 
@@ -142,13 +142,13 @@ s.waitForBoot {
 		var midiNote = msg[3].asInteger;
 		var delayTime = msg[4].asInteger;
 
-	//	("Pisada OFF: MIDI " ++ midiNote ++ " después de " ++ delayTime.round(0.1) ++ " segundos").postln;
+		("Pisada OFF: MIDI " ++ midiNote ++ " después de " ++ delayTime.round(0.1) ++ " segundos").postln;
 
 		// aqui se limpia la variable global ~voicesPisadas
 		if(~voicesPisadas[midiNote].notNil, {
 			~voicesPisadas[midiNote].set(\gate, 0); // liberta el synth
 			~voicesPisadas[midiNote] = nil; // limpia la variable
-		//	("Voz " ++ midiNote ++ " liberada de ~voicesPisadas").postln;
+			("Voz " ++ midiNote ++ " liberada de ~voicesPisadas").postln;
 		});
 	}, '/pisadasOff');
 
@@ -385,7 +385,7 @@ s.waitForBoot {
 		var volum = AnalogIn.kr(1).exprange(0.1, 1.0);
 		var micros = SoundIn.ar([0]);
 		//var micros2 = SoundIn.ar([1]);
-		var sensibility = AnalogIn.kr(3).exprange(0.1, 20.0);
+		var sensibility = AnalogIn.kr(3).exprange(1.0, 20.0);
 		var sig1, sig2;
 		var freq, amplitude, midiNote, gate;
 		var prevGate, noteOn, noteOff, currentNote, prevNote;
@@ -402,8 +402,9 @@ s.waitForBoot {
 		// Detección de frecuencia con ZeroCrossing (más eficiente)
 		amplitude = Amplitude.ar(micros, 0.05, 0.05);
 		freq = ZeroCrossing.ar(micros);
+		//freq.postln;
 		// Solo cuando hay sonido suficiente y frecuencia válida
-		gate = (amplitude > 0.01) * (freq > 20) * (freq < 2000);
+		gate = (amplitude > 0.01) * (freq > 200) * (freq < 400);
 		midiNote = freq.cpsmidi.round(1).clip(0, 127);
 
 		// detectar cambios de estado
